@@ -3,6 +3,16 @@ uuid = "153e1d4e-790f-4e3f-9036-fea9f57be94e"
 authors = ["Flemming Holtorf"]
 version = "0.1.0"
 
+[deps]
+Catalyst = "479239e8-5488-4da2-87a7-35f2df7eef83"
+DynamicPolynomials = "7c1d4256-1411-5781-91ec-d7bc3513ac07"
+LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+SumOfSquares = "4b9e565b-77fc-50a5-a571-1244f986bda1"
+
 [compat]
 julia = "1.6"
 
