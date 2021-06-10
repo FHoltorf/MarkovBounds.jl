@@ -6,11 +6,11 @@ DocMeta.setdocmeta!(MarkovBoundsSOS, :DocTestSetup, :(using MarkovBoundsSOS); re
 makedocs(;
     modules=[MarkovBoundsSOS],
     authors="Flemming Holtorf",
-    repo="https://github.com/FHolotrf/MarkovBoundsSOS.jl/blob/{commit}{path}#{line}",
+    repo="https://github.com/FHoltorf/MarkovBoundsSOS.jl/blob/{commit}{path}#{line}",
     sitename="MarkovBoundsSOS.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://FHolotrf.github.io/MarkovBoundsSOS.jl",
+        canonical="https://FHoltorf.github.io/MarkovBoundsSOS.jl",
         assets=String[],
     ),
     pages=[
@@ -19,5 +19,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/FHolotrf/MarkovBoundsSOS.jl",
+    repo="github.com/FHoltorf/MarkovBoundsSOS.jl",
 )
