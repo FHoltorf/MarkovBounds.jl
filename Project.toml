@@ -20,6 +20,7 @@ MetaGraphs = "0.6"
 Catalyst = "6"
 Parameters = "0.12"
 LightGraphs = "1"
+DynamicPolynomials = "0.3"
 julia = "1.6"
 
 [extras]
