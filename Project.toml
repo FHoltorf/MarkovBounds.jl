@@ -18,6 +18,7 @@ Reexport = "1"
 SumOfSquares = "0.4"
 MetaGraphs = "0.6"
 Catalyst = "6"
+Parameters = "0.12"
 julia = "1.6"
 
 [extras]
