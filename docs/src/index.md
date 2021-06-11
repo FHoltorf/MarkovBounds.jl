@@ -4,7 +4,7 @@ CurrentModule = MarkovBoundsSOS
 
 # MarkovBoundsSOS Documentation
 
-Documentation for [MarkovBoundsSOS](https://github.com/FHolotrf/MarkovBoundsSOS.jl).
+Documentation for [MarkovBoundsSOS](https://github.com/FHoltorf/MarkovBoundsSOS.jl).
 
 # Bounds on Stationary Moments of Markov Processes
 ```@docs
