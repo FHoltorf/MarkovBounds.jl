@@ -49,7 +49,7 @@ stationary_mean(RP::ReactionProcess, S, d::Int, solver) = stationary_mean(RP.Jum
 
 """
 	stationary_mean(rn::ReactionSystem, S0::Dict, S, d::Int, solver,
-			scales = Dict(s => 1 for s in speceies(rn));
+			scales = Dict(s => 1 for s in species(rn));
 			auto_scaling = false)
 
 returns *lower* and *upper* bound on the mean of species S of the reaction
@@ -67,10 +67,10 @@ If the initial condition of the reaction network under investigation is
 unknown or irrelevant, simply call
 
 	stationary_mean(rn::ReactionSystem, S, d::Int, solver,
-			scales = Dict(s => 1 for s in speceies(rn))).
+			scales = Dict(s => 1 for s in species(rn))).
 """
 function stationary_mean(rn::ReactionSystem, S0::Dict, S, d::Int, solver,
-	 					 scales = Dict(s => 1 for s in speceies(rn));
+	 					 scales = Dict(s => 1 for s in species(rn));
 						 auto_scaling = false)
 	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
  	return stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver)
@@ -105,7 +105,7 @@ stationary_variance(RP::ReactionProcess, x, d::Int, solver) = stationary_varianc
 
 """
 	stationary_variance(rn::ReactionSystem, S0, x, d::Int, solver,
-			    scales = Dict(s => 1 for s in speceies(rn));
+			    scales = Dict(s => 1 for s in species(rn));
 			    auto_scaling = false)
 
 returns *upper* bound on the variance of species S of the reaction
@@ -126,7 +126,7 @@ unknown or irrelevant, simply call
 			    scales = Dict(s => 1 for s in species(rn)))
 """
 function stationary_variance(rn::ReactionSystem, S0, S, d::Int, solver,
-	 						 scales = Dict(s => 1 for s in speceies(rn));
+	 						 scales = Dict(s => 1 for s in species(rn));
 							 auto_scaling = false)
 	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
  	return stationary_variance(RP.JumpProcess, RP.species_to_state[S], d, solver)
@@ -169,7 +169,7 @@ stationary_covariance_ellipsoid(RP::ReactionProcess, v, d::Int, solver) = statio
 
 """
 	stationary_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, solver,
-					scales = Dict(s => 1 for s in speceies(rn));
+					scales = Dict(s => 1 for s in species(rn));
 					auto_scaling = false)
 
 returns an *upper* on the volume of the covariance ellipsoid of any subset S
@@ -193,7 +193,7 @@ unknown or irrelevant, simply call
 					scales = Dict(s => 1 for s in species(rn)))
 """
 function stationary_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, solver,
-	 									 scales = Dict(s => 1 for s in speceies(rn));
+	 									 scales = Dict(s => 1 for s in species(rn));
 										 auto_scaling = false)
 	RP, x0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
  	return stationary_covariance_ellipsoid(RP.JumpProcess, [RP.species_to_state[x] for x in S], d, solver)
@@ -277,7 +277,7 @@ end
 
 """
 	transient_mean(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Number}, solver,
-			scales = Dict(s => 1 for s in speceies(rn));
+			scales = Dict(s => 1 for s in species(rn));
 			auto_scaling = false)
 
 returns a *lower* and *upper* bound on the mean of the molecular count of species
@@ -294,7 +294,7 @@ find the maximum molecular counts for each species under stoichiometry
 constraints (via LP).
 """
 function transient_mean(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Number}, solver,
-		  				scales = Dict(s => 1 for s in speceies(rn));
+		  				scales = Dict(s => 1 for s in species(rn));
 						auto_scaling = false)
 	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
 	μ0 = init_moments(RP.JumpProcess.x, S0, d + maximum(maxdegree.(RP.JumpProcess.a)))
@@ -309,6 +309,9 @@ returns an *upper* bound on 𝔼[v(x(T))²] - 𝔼[v(x(T))]² where v is a polyn
 and x(T) the state of the Markov process MP at time T.
 """
 function transient_variance(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
+	if trange[1] == 0
+		trange = trange[2:end]
+	end
 	nT = length(trange)
 	@polyvar(t)
     Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
@@ -329,7 +332,7 @@ end
 
 """
 	transient_variance(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Real}, solver,
-			    scales = Dict(s => 1 for s in speceies(rn));
+			    scales = Dict(s => 1 for s in species(rn));
 				auto_scaling = false)
 
 returns an *upper* bound on the variance of species S in the reaction network rn
@@ -346,7 +349,7 @@ find the maximum molecular counts for each species under stoichiometry
 constraints (via LP).
 """
 function transient_variance(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Real}, solver,
-						    scales = Dict(s => 1 for s in speceies(rn));
+						    scales = Dict(s => 1 for s in species(rn));
 							auto_scaling = false)
 	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
 	μ0 = init_moments(RP.JumpProcess.x, S0, d + maximum(maxdegree.(RP.JumpProcess.a)))
@@ -360,6 +363,9 @@ returns an *upper* bound on the volume of the covariance ellipsoid det(𝔼(v(x(
 where v is a polynomial and x(T) the state of the Markov process MP at time T.
 """
 function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{<:APL}, d::Int, trange::AbstractVector{<:Real}, solver)
+	if trange[1] == 0
+		trange = trange[2:end]
+	end
 	nT = length(trange)
 	n = length(v)
 	@polyvar(t)
@@ -386,7 +392,7 @@ end
 
 """
 	transient_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, trange::AbstractVector{<:Real}, solver,
-							scales = Dict(s => 1 for s in speceies(rn));
+							scales = Dict(s => 1 for s in species(rn));
 							auto_scaling = false)
 
 returns an *upper* bound on the volume of the covariance ellipsoid associated with any
@@ -403,7 +409,7 @@ find the maximum molecular counts for each species under stoichiometry
 constraints (via LP).
 """
 function transient_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, trange::AbstractVector{<:Real}, solver,
-										scales = Dict(s => 1 for s in speceies(rn));
+										scales = Dict(s => 1 for s in species(rn));
 										auto_scaling = false)
 	RP, x0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
 	μ0 = init_moments(RP.JumpProcess.x, x0, d + maximum(maxdegree.(RP.JumpProcess.a)))
@@ -451,6 +457,9 @@ function finite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::A
 end
 
 function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
+	if trange[1] == 0
+		trange = trange[2:end]
+	end
 	nT = length(trange)
 	MP = CP.MP
 	Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
@@ -489,6 +498,9 @@ function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 end
 
 function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
+	if trange[1] == 0
+		trange = trange[2:end]
+	end
 	nT = length(trange)
 	MP = CP.MP
 	Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
@@ -525,6 +537,9 @@ function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 end
 
 function finite_horizon_TP(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
+	if trange[1] == 0
+		trange = trange[2:end]
+	end
 	nT = length(trange)
 	MP = CP.MP
 	Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
@@ -571,6 +586,9 @@ function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange:
 end
 
 function infinite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
+	if trange[1] == 0
+		trange = trange[2:end]
+	end
 	nT = length(trange)
 	MP = CP.MP
 	ρ = CP.discount_factor

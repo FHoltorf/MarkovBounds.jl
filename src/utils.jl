@@ -44,10 +44,22 @@ function stoich_bounds(rn::ReactionSystem, x0::Dict, solver)
     return scales
 end
 
+"""
+    setup_reaction_process(rn::ReactionSystem, x0::Dict;
+                    scales = Dict(s => 1.0 for s in species(rn)),
+                    auto_scaling = false, solver = nothing)
+
+    transforms a reaction network as defined by Catalyst.jl's ReactionSystem type
+    into an equivalent ReactionProcess accounting for reaction invariants and
+    scales. 
+"""
 function setup_reaction_process(rn::ReactionSystem, x0::Dict; scales = Dict(s => 1.0 for s in species(rn)), auto_scaling = false, solver = nothing)
     P = ReactionProcess(rn)
     project_into_subspace!(P, [x0[s] for s in species(rn)])
     if auto_scaling
+        if solver isa nothing
+            @error "Need to require LP solver if autoscaling is enabled"
+        end
         scales = stoich_bounds(rn, x0, solver)
     end
     x_scale = [scales[P.state_to_species[x]] for x in P.JumpProcess.x]
