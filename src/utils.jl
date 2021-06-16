@@ -51,7 +51,7 @@ end
 
     transforms a reaction network as defined by Catalyst.jl's ReactionSystem type
     into an equivalent ReactionProcess accounting for reaction invariants and
-    scales. 
+    scales.
 """
 function setup_reaction_process(rn::ReactionSystem, x0::Dict; scales = Dict(s => 1.0 for s in species(rn)), auto_scaling = false, solver = nothing)
     P = ReactionProcess(rn)
@@ -208,4 +208,27 @@ function expectation(w, μ::Dict, p::Partition)
         end
     end
     return ex
+end
+
+function value_function(model, trange, t)
+    if trange[1] == 0
+        trange = trange[2:end]
+    end
+    Δt = [i == 1 ? trange[i] : trange[i] - trange[i-1] for i in 1:length(trange)]
+    V_pieces = [subs(value(model[:w][i]), t => (t - (i == 1 ? 0 : trange[i-1]))/Δt[i]) for i in keys(model[:w])]
+    V_poly(x,t) = V_pieces[get_piece(t, trange)]
+    V_val(x,t) = V_poly(x,t)(x..., t)
+    return V_poly, V_val
+end
+
+function get_piece(t, trange)
+    if t > trange[end] || t < 0
+        @warn string("t = ", t, " outside the domain of V")
+        i = t < 0 ? 1 : length(trange)
+    elseif t == trange[end]
+        i = length(trange)
+    else
+        i = findfirst(ti -> ti > t, trange)
+    end
+    return i
 end

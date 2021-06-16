@@ -24,9 +24,8 @@ include("utils.jl")
 
 export JumpProcess, ReactionProcess, DiffusionProcess, JumpDiffusionProcess, ControlProcess,
        LagrangeMayer, Lagrange, Mayer, ExitProbability, TerminalSetProbability,
-       setup_reaction_process,
+       setup_reaction_process, inf_generator, extended_inf_generator,
        stationary_polynomial, stationary_mean, stationary_variance, stationary_covariance_ellipsoid,
        transient_polynomial, transient_mean, transient_variance, transient_covariance_ellipsoid,
-       optimal_control,
-       setup_reaction_process
+       optimal_control, value_function
 end

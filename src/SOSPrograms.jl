@@ -439,7 +439,7 @@ function optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstract
 		model = finite_horizon_control(CP, μ0, d, trange, solver)
 	end
 	optimize!(model)
-	return  objective_value(model), termination_status(model), MOI.get(model, MOI.SolveTime())
+	return  objective_value(model), termination_status(model), MOI.get(model, MOI.SolveTime()), model
 end
 
 ## Finite horizon control problems
