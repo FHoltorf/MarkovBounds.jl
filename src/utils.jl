@@ -44,7 +44,7 @@ function stoich_bounds(rn::ReactionSystem, x0::Dict, solver)
     return scales
 end
 
-function setup_reaction_system_init(rn::ReactionSystem, x0::Dict, scales::Dict = Dict(s => 1.0 for s in species(rn)); auto_scaling = false, solver = nothing)
+function setup_reaction_process(rn::ReactionSystem, x0::Dict; scales = Dict(s => 1.0 for s in species(rn)), auto_scaling = false, solver = nothing)
     P = ReactionProcess(rn)
     project_into_subspace!(P, [x0[s] for s in species(rn)])
     if auto_scaling
@@ -56,7 +56,7 @@ function setup_reaction_system_init(rn::ReactionSystem, x0::Dict, scales::Dict =
     return P, x0
 end
 
-function setup_reaction_system(rn::ReactionSystem, scales::Dict = Dict(s => 1.0 for s in species(rn)))
+function setup_reaction_process(rn::ReactionSystem; scales = Dict(s => 1.0 for s in species(rn)))
     P = ReactionProcess(rn)
     x_scale = [scales[P.state_to_species[x]] for x in P.JumpProcess.x]
     rescale_state!(P, x_scale)

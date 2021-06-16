@@ -72,12 +72,12 @@ unknown or irrelevant, simply call
 function stationary_mean(rn::ReactionSystem, S0::Dict, S, d::Int, solver,
 	 					 scales = Dict(s => 1 for s in speceies(rn));
 						 auto_scaling = false)
-	RP, S0 = setup_reaction_system_init(rn, S0, scales, auto_scaling = auto_scaling, solver = solver)
+	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
  	return stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver)
 end
 function stationary_mean(rn::ReactionSystem, S, d::Int, solver,
 					     scales = Dict(s => 1 for s in species(rn)))
-	RP = setup_reaction_system(rn, scales)
+	RP = setup_reaction_process(rn, scales = scales)
 	return stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver)
 end
 
@@ -128,12 +128,12 @@ unknown or irrelevant, simply call
 function stationary_variance(rn::ReactionSystem, S0, S, d::Int, solver,
 	 						 scales = Dict(s => 1 for s in speceies(rn));
 							 auto_scaling = false)
-	RP, S0 = setup_reaction_system_init(rn, S0, scales, auto_scaling = auto_scaling, solver = solver)
+	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
  	return stationary_variance(RP.JumpProcess, RP.species_to_state[S], d, solver)
 end
 function stationary_variance(rn::ReactionSystem, S, d::Int, solver,
 							 scales = Dict(s => 1 for s in species(rn)))
-	RP = setup_reaction_system(rn, scales)
+	RP = setup_reaction_process(rn, scales = scales)
 	return stationary_variance(RP.JumpProcess, RP.species_to_state[S], d, solver)
 end
 
@@ -195,13 +195,13 @@ unknown or irrelevant, simply call
 function stationary_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, solver,
 	 									 scales = Dict(s => 1 for s in speceies(rn));
 										 auto_scaling = false)
-	RP, x0 = setup_reaction_system_init(rn, S0, scales, auto_scaling = auto_scaling, solver = solver)
+	RP, x0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
  	return stationary_covariance_ellipsoid(RP.JumpProcess, [RP.species_to_state[x] for x in S], d, solver)
 end
 
 function stationary_covariance_ellipsoid(rn::ReactionSystem, S, d::Int, solver,
 	 									 scales = Dict(s => 1 for s in species(rn)))
-	RP = setup_reaction_system(rn, scales)
+	RP = setup_reaction_process(rn, scales = scales)
 	return stationary_covariance_ellipsoid(RP.JumpProcess, [RP.species_to_state[x] for x in S], d, solver)
 end
 
@@ -296,7 +296,7 @@ constraints (via LP).
 function transient_mean(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Number}, solver,
 		  				scales = Dict(s => 1 for s in speceies(rn));
 						auto_scaling = false)
-	RP, S0 = setup_reaction_system_init(rn, S0, scales, auto_scaling = auto_scaling, solver = solver)
+	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
 	μ0 = init_moments(RP.JumpProcess.x, S0, d + maximum(maxdegree.(RP.JumpProcess.a)))
  	return transient_mean(RP.JumpProcess, μ0, RP.species_to_state[S], d, trange, solver)
 end
@@ -348,7 +348,7 @@ constraints (via LP).
 function transient_variance(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Real}, solver,
 						    scales = Dict(s => 1 for s in speceies(rn));
 							auto_scaling = false)
-	RP, S0 = setup_reaction_system_init(rn, S0, scales, auto_scaling = auto_scaling, solver = solver)
+	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
 	μ0 = init_moments(RP.JumpProcess.x, S0, d + maximum(maxdegree.(RP.JumpProcess.a)))
  	return transient_variance(RP.JumpProcess, μ0, RP.species_to_state[S], d, trange, solver)
 end
@@ -405,7 +405,7 @@ constraints (via LP).
 function transient_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, trange::AbstractVector{<:Real}, solver,
 										scales = Dict(s => 1 for s in speceies(rn));
 										auto_scaling = false)
-	RP, x0 = setup_reaction_system_init(rn, S0, scales, auto_scaling = auto_scaling, solver = solver)
+	RP, x0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver)
 	μ0 = init_moments(RP.JumpProcess.x, x0, d + maximum(maxdegree.(RP.JumpProcess.a)))
  	return transient_covariance_ellipsoid(RP.JumpProcess, μ0, [RP.species_to_state[x] for x in S], d, trange, solver)
 end
