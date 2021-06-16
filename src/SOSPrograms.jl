@@ -359,22 +359,23 @@ end
 returns an *upper* bound on the volume of the covariance ellipsoid det(𝔼(v(x(T))v(x(T))ᵀ)),
 where v is a polynomial and x(T) the state of the Markov process MP at time T.
 """
-function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{APL}, d::Int, trange::AbstractVector{<:Real}, solver)
+function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{<:APL}, d::Int, trange::AbstractVector{<:Real}, solver)
 	nT = length(trange)
+	n = length(v)
 	@polyvar(t)
     Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
 	T = @set(t >= 0 && t <= 1)
     XT = intersect(MP.X, T)
 
-	model = SOSModel(Mosek.Optimizer)
-	@variable(model, w[1:n], Poly(monomials(sort([MP.x...,t], rev = true), 0:d)))
+	model = SOSModel(solver)
+	@variable(model, w[1:nT], Poly(monomials(sort([MP.x...,t], rev = true), 0:d)))
 	@variable(model, S[1:n+1,1:n+1], PSD)
 	@variable(model, U[1:2n,1:2n], PSD)
 	@variable(model, r[1:n])
     @variable(model, q[1:n])
 	@constraint(model, [i in 1:nT], extended_inf_generator(MP, w[i], t, scale = Δt[i]) >= 0, domain = XT)
 	@constraint(model, [i in 1:nT-1], subs(w[i+1], t => 0) - subs(w[i], t => 1) >= 0, domain = MP.X)
-	@constraint(model, -(v'*S[1:n, 1:n]*v + 2*S[end,:]*v) - subs(w[nT], t=>1) >= 0, domain = MP.X)
+	@constraint(model, -(v'*S[1:n, 1:n]*v + 2*S[end,1:n]'*v) - subs(w[nT], t=>1) >= 0, domain = MP.X)
     @constraint(model, S[1:n,1:n] .== U[1:n, 1:n])
     @constraint(model, [i in 1:n, j in 1:i], -2*U[n+i,j] - (i == j ? U[n+i,n+i] - r[i] : 0) == 0)
     @constraint(model, [i in 1:n], [-1, q[i], r[i]] in MOI.DualExponentialCone())
@@ -404,9 +405,9 @@ constraints (via LP).
 function transient_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, trange::AbstractVector{<:Real}, solver,
 										scales = Dict(s => 1 for s in speceies(rn));
 										auto_scaling = false)
-	RP, x0 = setup_reaction_system_init(rn, x0, scales, auto_scaling = auto_scaling, solver = solver)
+	RP, x0 = setup_reaction_system_init(rn, S0, scales, auto_scaling = auto_scaling, solver = solver)
 	μ0 = init_moments(RP.JumpProcess.x, x0, d + maximum(maxdegree.(RP.JumpProcess.a)))
- 	return transient_covariance_ellipsoid(RP.JumpProcess, μ0, [RP.species_to_state[x] for x in v], d, trange, solver)
+ 	return transient_covariance_ellipsoid(RP.JumpProcess, μ0, [RP.species_to_state[x] for x in S], d, trange, solver)
 end
 
 
