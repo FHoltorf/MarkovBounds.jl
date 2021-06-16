@@ -79,6 +79,9 @@ mutable struct LagrangeMayer
     m::APL
 end
 
+Lagrange(l) = LagrangeMayer(l, 0*l)
+Mayer(m) = LagrangeMayer(0*m, m)
+
 mutable struct ChanceConstraint
     X::BasicSemialgebraicSet
     α::T1 where T1 <: Number # confidence level
