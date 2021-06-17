@@ -10,8 +10,8 @@ mutable struct JumpProcess <: MarkovProcess
     end
 end
 
-JumpProcess(x::PV, a::T1, h::T2, X = FullSpace()) where {T1, T2 <: APL} = JumpProcess([x],[a],[h],X)
-JumpProcess(x::PV, a::Vector{<:APL}, h::Vector{T}, X = FullSpace()) where T <: APL = JumpProcess([x],a,[[hi] for hi in h],X)
+JumpProcess(x::PV, a::APL, h::APL, X = FullSpace()) = JumpProcess([x],[a],[[h]],X)
+JumpProcess(x::PV, a::Vector{<:APL}, h::Vector{<:APL}, X = FullSpace()) = JumpProcess([x],a,[[hi] for hi in h],X)
 
 mutable struct ReactionProcess <: MarkovProcess
     ReactionSystem::ReactionSystem
@@ -47,15 +47,30 @@ end
 DiffusionProcess(x::PV, f::APL, σ::APL, X = FullSpace()) = DiffusionProcess([x], [f], reshape([σ],1,1), X)
 
 mutable struct JumpDiffusionProcess <: MarkovProcess
-    JumpProcess::JumpProcess
-    DiffusionProcess::DiffusionProcess
+    x::Vector{<:PV} # state
+    a::Vector{<:APL} # propensities
+    h::Vector{Vector{<:APL}} # jumps
+    f::Vector{<:APL} # drift
+    σ::Matrix{<:APL} # diffusion matrix
+    X # state space enclosure
+    function JumpDiffusionProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{Vector{<:APL}}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace())# where T <: APL
+        return new(x, a, h, f, σ, X)
+    end
+end
+
+JumpDiffusionProcess(x::PV, a::APL, h::APL, f::APL, σ::APL, X = Fullspace()) = JumpDiffusionProcess([x], [a], [[h]], [f], reshape(σ,1,1), X)
+JumpDiffusionProcess(x::PV, a::Vector{<:APL}, h::Vector{<:APL}, f::APL, σ::APL, X = Fullspace()) = JumpDiffusionProcess([x], a, [[hi] for hi in h], [f], reshape(σ,1,1), X)
+
+function JumpDiffusionProcess(JP::JumpProcess, DP::DiffusionProcess)
+    @assert all(JP.x .== DP.x) "The jump and diffusion process must have the same state"
+    return JumpDiffusionProcess(JP.x, JP.a, JP.h, DP.f, DP.σ, intersect(DP.X, JP.X))
 end
 
 mutable struct ControlProcess
     MP::MarkovProcess
-    T::T1 where T1 <: Real  # time horizon
+    T::Real  # time horizon
     u::Vector{<:PV} # control variables
-    t::T2 where T2 <: PV # time variable
+    t::PV # time variable
     U # control set
     Objective
     PathChanceConstraints
@@ -66,7 +81,7 @@ mutable struct ControlProcess
     end
 end
 
-ControlProcess(MP::MarkovProcess, T::T1, u::T2, t, U, obj, PCs = [], TCs = [], dis_fac = 0) where {T1 <: Real, T2 <: PV} =
+ControlProcess(MP::MarkovProcess, T::Real, u::PV, t, U, obj, PCs = [], TCs = [], dis_fac = 0) =
                ControlProcess(MP, T, [u], t, U, obj, PCs, TCs, dis_fac)
 
 mutable struct ExitProbability
@@ -82,16 +97,18 @@ mutable struct LagrangeMayer
     m::APL
 end
 
-Lagrange(l) = LagrangeMayer(l, 0*l)
-Mayer(m) = LagrangeMayer(0*m, m)
+Lagrange(l) = LagrangeMayer(l, 0*l) # not elegant but works
+Mayer(m) = LagrangeMayer(0*m, m) # not elegant but works
 
 mutable struct ChanceConstraint
     X::BasicSemialgebraicSet
-    α::T1 where T1 <: Number # confidence level
+    α::Real # confidence level
 end
 
 inf_generator(MP::JumpProcess, p::Polynomial) = sum(MP.a[i]*(subs(p, MP.x => MP.h[i]) - p) for i in 1:length(MP.a))
 inf_generator(MP::ReactionProcess, p::Polynomial) = inf_generator(MP.JumpProcess,p)
 inf_generator(MP::DiffusionProcess, p::Polynomial) = MP.f'*∂(p,MP.x) + 1/2*sum(∂²(p,MP.x,MP.x) .* MP.σ)
-inf_generator(MP::JumpDiffusionProcess, p::Polynomial) = inf_generator(MP.JumpProcess,p) + inf_generator(MP.DiffusionProcess,p)
+inf_generator(MP::JumpDiffusionProcess, p::Polynomial) = MP.f'*∂(p,MP.x) + 1/2*sum(∂²(p,MP.x,MP.x) .* MP.σ) + sum(MP.a[i]*(subs(p, MP.x => MP.h[i]) - p) for i in 1:length(MP.a))
+#old organization
+#inf_generator(MP::JumpDiffusionProcess, p::Polynomial) = inf_generator(MP.JumpProcess,p) + inf_generator(MP.DiffusionProcess,p)
 extended_inf_generator(MP::MarkovProcess, p::Polynomial, t::PolyVar; scale = 1) = ∂(p,t) + scale*inf_generator(MP, p)

@@ -20,12 +20,12 @@ Base.show(io::IO, MP::DiffusionProcess) = println(io,
 Base.show(io::IO, MP::JumpDiffusionProcess) = println(io,
 "Jump-Diffusion Process
 -----------------------
-  States: $(print_wo_type(MP.JumpProcess.x))
-  Propensities: $(print_wo_type(MP.JumpProcess.a))
-  Jumps: ["*prod(print_wo_type(MP.JumpProcess.h[i])*(i < length(MP.JumpProcess.h) ? ", " : "" ) for i in 1:length(MP.JumpProcess.h))*"]
-  Drift: $(print_wo_type(MP.DiffusionProcess.f))
-  Diffusion: $(print_wo_type(MP.DiffusionProcess.σ))
-  State Space: $(MP.DiffusionProcess.X)")
+  States: $(print_wo_type(MP.x))
+  Propensities: $(print_wo_type(MP.a))
+  Jumps: ["*prod(print_wo_type(MP.h[i])*(i < length(MP.h) ? ", " : "" ) for i in 1:length(MP.h))*"]
+  Drift: $(print_wo_type(MP.f))
+  Diffusion: $(print_wo_type(MP.σ))
+  State Space: $(MP.X)")
 
 Base.show(io::IO, CP::ControlProcess) = println(io,
 "Control Process
