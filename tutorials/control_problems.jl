@@ -19,7 +19,6 @@ using MarkovBoundsSOS, MosekTools, Plots, DifferentialEquations
                 x(t) ∈ ℝ₊,
                 x(0) ∼ μ₀
 
-
     To solve this problem we define the associated ControlProcess in two steps.
     First, we define the diffusion process via its diffusion matrix, drift coeff.
     and state space:
@@ -47,7 +46,7 @@ U = @set(u >= 0 && u <= 1) # set of admissible controls
 stagecost = (x[1]-0.75)^2 + (x[2] - 0.5)^2/10 + (u - 0.5)^2/10
 obj = Lagrange(stagecost) # Lagrange type objective
 T = 10.0 # control horizon
-CP = ControlProcess(DP, T, [u], t, U, obj)
+CP = ControlProcess(DP, T, u, t, U, obj)
 """
     Now almost everything is set up to determine a lower bound on the objective value
     associated with the control problem CP. We only need to specify the distribution
