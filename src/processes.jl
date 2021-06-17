@@ -53,7 +53,7 @@ end
 
 mutable struct ControlProcess
     MP::MarkovProcess
-    T::T1 where T1 <: Number  # time horizon
+    T::T1 where T1 <: Real  # time horizon
     u::Vector{<:PV} # control variables
     t::T2 where T2 <: PV # time variable
     U # control set
@@ -65,6 +65,9 @@ mutable struct ControlProcess
         return new(MP, T, u, t, U, obj, PCs, TCs, dis_fac)
     end
 end
+
+ControlProcess(MP::MarkovProcess, T::T1, u::T2, t, U, obj, PCs = [], TCs = [], dis_fac = 0) where {T1 <: Real, T2 <: PV} =
+               ControlProcess(MP, T, [u], t, U, obj, PCs, TCs, dis_fac)
 
 mutable struct ExitProbability
     X::BasicSemialgebraicSet
