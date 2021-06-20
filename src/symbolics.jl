@@ -1,7 +1,7 @@
 using Symbolics: Num, expand
-using SymbolicUtils: Mul, Pow, Sym, arguments
+using SymbolicUtils: Add, Mul, Pow, Sym, arguments
 
-polynomialize_vars(x, u) = Dict(v.val => PolyVar{true}(string(v.val.name)) for v in vcat(x,u))
+polynomialize_vars(x, u...) = Dict(v.val => PolyVar{true}(string(v.val.name)) for v in vcat(x,u...))
 polynomialize_vars(x) = Dict(v.val => PolyVar{true}(string(v.val.name)) for v in x)
 
 # one can probably do this better via multiple dispatch but for now it does what I want
