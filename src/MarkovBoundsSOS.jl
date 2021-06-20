@@ -6,6 +6,7 @@ using SumOfSquares
 @reexport using SumOfSquares: @set, SemialgebraicSets
 @reexport using Catalyst: @reaction_network, species, reactions, prodstoichmat,
                           substoichmat, ReactionSystem, Reaction
+
 @reexport using DynamicPolynomials: @polyvar, PolyVar, AbstractPolynomialLike,
                                     Polynomial, subs, polynomial, differentiate,
                                     MonomialVector, maxdegree
@@ -13,7 +14,6 @@ using SumOfSquares
 import LinearAlgebra: qr, nullspace, diag, Diagonal, tr, transpose
 import Base: show
 import Parameters: @unpack
-
 
 const PV = PolyVar
 const APL = AbstractPolynomialLike

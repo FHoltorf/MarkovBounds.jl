@@ -231,13 +231,13 @@ function transient_pop(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::Abs
 		trange = trange[2:end]
 	end
     nT = length(trange)
-    @polyvar(t)
+    t = MP.time
     T = @set(t >= 0 && t <= 1)
     XT = intersect(MP.X, T)
     Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
     model = SOSModel(solver)
     @variable(model, w[1:nT], Poly(monomials(sort([MP.x...,t], rev = true), 0:d)))
-    @constraint(model, [i in 1:nT], extended_inf_generator(MP, w[i], t, scale=Δt[i]) >= 0, domain = XT)
+    @constraint(model, [i in 1:nT], extended_inf_generator(MP, w[i]; scale=Δt[i]) >= 0, domain = XT)
     @constraint(model, [i in 1:nT-1], subs(w[i+1], t => 0) - subs(w[i], t => 1) >= 0, domain = MP.X)
     @constraint(model, v - subs(w[nT], t=>1) >= 0, domain = MP.X)
     @objective(model, Max, expectation(polynomial(subs(w[1], t=>0)), μ0))
@@ -331,7 +331,7 @@ function transient_variance(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange
 		trange = trange[2:end]
 	end
 	nT = length(trange)
-	@polyvar(t)
+	t = MP.time
     Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
 	T = @set(t >= 0 && t <= 1)
     XT = intersect(MP.X, T)
@@ -339,7 +339,7 @@ function transient_variance(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange
 	model = SOSModel(solver)
 	@variable(model, w[1:nT], Poly(monomials(sort([MP.x...,t], rev = true), 0:d)))
 	@variable(model, S[1:2])
-	@constraint(model, [i in 1:nT], extended_inf_generator(MP, w[i], t, scale = Δt[i]) >= 0, domain = XT)
+	@constraint(model, [i in 1:nT], extended_inf_generator(MP, w[i]; scale = Δt[i]) >= 0, domain = XT)
 	@constraint(model, [i in 1:nT-1], subs(w[i+1], t => 0) - subs(w[i], t => 1) >= 0, domain = MP.X)
 	@constraint(model, - (v^2 + 2*S[1]*v) - subs(w[nT], t => 1) >= 0, domain = MP.X)
 	@constraint(model, [1 S[1]; S[1] S[2]] in PSDCone())
@@ -391,8 +391,8 @@ function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{
 	end
 	nT = length(trange)
 	n = length(v)
-	@polyvar(t)
-    Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
+	t = MP.time
+	Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
 	T = @set(t >= 0 && t <= 1)
     XT = intersect(MP.X, T)
 
@@ -402,7 +402,7 @@ function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{
 	@variable(model, U[1:2n,1:2n], PSD)
 	@variable(model, r[1:n])
     @variable(model, q[1:n])
-	@constraint(model, [i in 1:nT], extended_inf_generator(MP, w[i], t, scale = Δt[i]) >= 0, domain = XT)
+	@constraint(model, [i in 1:nT], extended_inf_generator(MP, w[i]; scale = Δt[i]) >= 0, domain = XT)
 	@constraint(model, [i in 1:nT-1], subs(w[i+1], t => 0) - subs(w[i], t => 1) >= 0, domain = MP.X)
 	@constraint(model, -(v'*S[1:n, 1:n]*v + 2*S[end,1:n]'*v) - subs(w[nT], t=>1) >= 0, domain = MP.X)
     @constraint(model, S[1:n,1:n] .== U[1:n, 1:n])
@@ -490,25 +490,26 @@ function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 	end
 	nT = length(trange)
 	MP = CP.MP
+	t = MP.time
 	Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
-	T = @set(CP.t >= 0 && CP.t <= 1)
+	T = @set(t >= 0 && t <= 1)
 	XTU = intersect(MP.X,T,CP.U)
 
 	model = SOSModel(solver)
-	@variable(model, w[1:nT], Poly(monomials(sort([MP.x...,CP.t],rev=true), 0:d)))
-	@constraint(model, [i in 1:nT], CP.Objective.l + extended_inf_generator(MP, w[i], CP.t, scale = Δt[i]) >= 0, domain = XTU)
-	@constraint(model, [i in 1:nT-1], subs(w[i+1], CP.t => 0) - subs(w[i], CP.t => 1) >= 0, domain = MP.X)
-	@constraint(model, CP.Objective.m - subs(w[nT], CP.t=>1) >= 0, domain = MP.X)
-	obj = expectation(polynomial(subs(w[1], CP.t => 0)), μ0)
+	@variable(model, w[1:nT], Poly(monomials(sort([MP.x...,t],rev=true), 0:d)))
+	@constraint(model, [i in 1:nT], CP.Objective.l + extended_inf_generator(MP, w[i]; scale = Δt[i]) >= 0, domain = XTU)
+	@constraint(model, [i in 1:nT-1], subs(w[i+1], t => 0) - subs(w[i], t => 1) >= 0, domain = MP.X)
+	@constraint(model, CP.Objective.m - subs(w[nT], t=>1) >= 0, domain = MP.X)
+	obj = expectation(polynomial(subs(w[1], t => 0)), μ0)
 	if !isempty(CP.PathChanceConstraints)
 		for PC in CP.PathChanceConstraints
 			∂X = ∂(PC.X)
 			s_p = @variable(model)
-			v = @variable(model, [1:nT], Poly(monomials(sort([MP.x..., CP.t],rev=true), 0:d)))
-			@constraint(model, [i in 1:nT], extended_inf_generator(MP, v[i], CP.t, scale = Δt[i]) >= 0, domain = intersect(PC.X, T, CP.U))
-			@constraint(model, [i in 1:nT-1], subs(v[i+1], CP.t => 0) - subs(v[i], CP.t => 1) >= 0, domain = intersect(PC.X, T))
+			v = @variable(model, [1:nT], Poly(monomials(sort([MP.x..., t],rev=true), 0:d)))
+			@constraint(model, [i in 1:nT], extended_inf_generator(MP, v[i]; scale = Δt[i]) >= 0, domain = intersect(PC.X, T, CP.U))
+			@constraint(model, [i in 1:nT-1], subs(v[i+1], t => 0) - subs(v[i], t => 1) >= 0, domain = intersect(PC.X, T))
 			@constraint(model, [i in 1:nT, k in 1:length(∂X)], v[i] >= 0, domain = ∂X[k])
-			@constraint(model, -s_p - subs(v[nT], CP.t => 1) >= 0, domain = PC.X)
+			@constraint(model, -s_p - subs(v[nT], t => 1) >= 0, domain = PC.X)
 			@constraint(model, s_p >= 0)
 			obj += s_p*(1-PC.α)
 		end
@@ -517,7 +518,7 @@ function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 		for TC in CP.TerminalChanceConstraints
 			s_p = @variable(model)
 			@constraint(model, s_p >= 0)
-			@constraint(model, - s_p + CP.Objective.m - subs(w[nT], CP.t => 1) >= 0, domain = TC.X)
+			@constraint(model, - s_p + CP.Objective.m - subs(w[nT], t => 1) >= 0, domain = TC.X)
 			obj += s_p*(1-TC.α)
 		end
 	end
@@ -531,28 +532,29 @@ function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 	end
 	nT = length(trange)
 	MP = CP.MP
+	t = MP.time
 	Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
-	T = @set(CP.t >= 0 && CP.t <= 1)
+	T = @set(t >= 0 && t <= 1)
 	XTU = intersect(CP.Objective.X,MP.X,T,CP.U)
 
 	model = SOSModel(solver)
 	∂X = ∂(CP.Objective.X)
 	@variable(model, s >= 0)
-	@variable(model, w[1:nT], Poly(monomials(sort([MP.x...,CP.t],rev=true), 0:d)))
-	@constraint(model, [i in 1:nT], extended_inf_generator(MP, w[i], CP.t, scale = Δt[i]) >= 0, domain = XTU)
-	@constraint(model, [i in 1:nT-1], subs(w[i+1], CP.t => 0) - subs(w[i], CP.t => 1) >= 0, domain = intersect(CP.Objective.X, MP.X))
+	@variable(model, w[1:nT], Poly(monomials(sort([MP.x...,t],rev=true), 0:d)))
+	@constraint(model, [i in 1:nT], extended_inf_generator(MP, w[i]; scale = Δt[i]) >= 0, domain = XTU)
+	@constraint(model, [i in 1:nT-1], subs(w[i+1], t => 0) - subs(w[i], t => 1) >= 0, domain = intersect(CP.Objective.X, MP.X))
 	@constraint(model, [i in 1:nT, k in 1:length(∂X)], w[i] >= 0, domain = intersect(∂X[k], MP.X, T))
-	@constraint(model, - 1 - subs(w[nT], CP.t => 1) >= 0, domain = CP.Objective.X)
-	obj = expectation(polynomial(subs(w[1], CP.t => 0)), μ0)
+	@constraint(model, - 1 - subs(w[nT], t => 1) >= 0, domain = CP.Objective.X)
+	obj = expectation(polynomial(subs(w[1], t => 0)), μ0)
 	if !isempty(CP.PathChanceConstraints)
 		for PC in CP.PathChanceConstraints
 			∂X = ∂(PC.X)
 			s_p = @variable(model)
-			v = @variable(model, [1:nT], Poly(monomials(sort([MP.x..., CP.t],rev=true), 0:d)))
-			@constraint(model, [i in 1:nT], extended_inf_generator(MP, v[i], CP.t, scale = Δt[i]) >= 0, domain = intersect(PC.X, T, CP.U))
-			@constraint(model, [i in 1:nT-1], subs(v[i+1], CP.t => 0) - subs(v[i], CP.t => 1) >= 0, domain = PC.X)
+			v = @variable(model, [1:nT], Poly(monomials(sort([MP.x..., t],rev=true), 0:d)))
+			@constraint(model, [i in 1:nT], extended_inf_generator(MP, v[i]; scale = Δt[i]) >= 0, domain = intersect(PC.X, T, CP.U))
+			@constraint(model, [i in 1:nT-1], subs(v[i+1], t => 0) - subs(v[i], t => 1) >= 0, domain = PC.X)
 			@constraint(model, [i in 1:nT, k in 1:length(∂X)], v[i] >= 0, domain = intersect(∂X[k], T))
-			@constraint(model, -s_p - subs(v[nT], CP.t => 1) >= 0, domain = PC.X)
+			@constraint(model, -s_p - subs(v[nT], t => 1) >= 0, domain = PC.X)
 			@constraint(model, s_p >= 0)
 			obj += s_p*(1-PC.α)
 		end
@@ -570,26 +572,27 @@ function finite_horizon_TP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 	end
 	nT = length(trange)
 	MP = CP.MP
+	t = MP.time
 	Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
-	T = @set(CP.t >= 0 && CP.t <= 1)
+	T = @set(t >= 0 && t <= 1)
 	XTU = intersect(MP.X,T,CP.U)
 
 	model = SOSModel(solver)
-	@variable(model, w[1:nT], Poly(monomials(sort([MP.x...,CP.t],rev=true), 0:d)))
-	@constraint(model, [i in 1:nT], extended_inf_generator(MP, w[i], CP.t, scale = Δt[i]) >= 0, domain = XTU)
-	@constraint(model, [i in 1:nT-1], subs(w[i+1], CP.t => 0) - subs(w[i], CP.t => 1) >= 0, domain = MP.X)
-	@constraint(model, - subs(w[nT], CP.t=>1) >= 0, domain = MP.X)
-	@constraint(model, - 1 - subs(w[nT], CP.t=>1) >= 0, domain = CP.Objective.X)
-	obj = expectation(polynomial(subs(w[1], CP.t => 0)), μ0)
+	@variable(model, w[1:nT], Poly(monomials(sort([MP.x...,t],rev=true), 0:d)))
+	@constraint(model, [i in 1:nT], extended_inf_generator(MP, w[i]; scale = Δt[i]) >= 0, domain = XTU)
+	@constraint(model, [i in 1:nT-1], subs(w[i+1], t => 0) - subs(w[i], t => 1) >= 0, domain = MP.X)
+	@constraint(model, - subs(w[nT], t=>1) >= 0, domain = MP.X)
+	@constraint(model, - 1 - subs(w[nT], t=>1) >= 0, domain = CP.Objective.X)
+	obj = expectation(polynomial(subs(w[1], t => 0)), μ0)
 	if !isempty(CP.PathChanceConstraints)
 		for PC in CP.PathChanceConstraints
 			∂X = ∂(PC.X)
 			s_p = @variable(model)
-			v = @variable(model, [1:nT], Poly(monomials(sort([MP.x..., CP.t],rev=true), 0:d)))
-			@constraint(model, [i in 1:nT], extended_inf_generator(MP, v[i], CP.t, scale = Δt[i]) >= 0, domain = intersect(PC.X, T, CP.U))
-			@constraint(model, [i in 1:nT-1], subs(v[i+1], CP.t => 0) - subs(v[i], CP.t => 1) >= 0, domain = intersect(PC.X, T))
+			v = @variable(model, [1:nT], Poly(monomials(sort([MP.x..., t],rev=true), 0:d)))
+			@constraint(model, [i in 1:nT], extended_inf_generator(MP, v[i]; scale = Δt[i]) >= 0, domain = intersect(PC.X, T, CP.U))
+			@constraint(model, [i in 1:nT-1], subs(v[i+1], t => 0) - subs(v[i], t => 1) >= 0, domain = intersect(PC.X, T))
 			@constraint(model, [i in 1:nT, k in 1:length(∂X)], v[i] >= 0, domain = ∂X[k])
-			@constraint(model, -s_p - subs(v[nT], CP.t => 1) >= 0, domain = PC.X)
+			@constraint(model, -s_p - subs(v[nT], t => 1) >= 0, domain = PC.X)
 			@constraint(model, s_p >= 0)
 			obj += s_p*(1-PC.α)
 		end
@@ -598,7 +601,7 @@ function finite_horizon_TP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 		for TC in CP.TerminalChanceConstraints
 			s_p = @variable(model)
 			@constraint(model, s_p >= 0)
-			@constraint(model, - s_p + CP.Objective.m - subs(w[nT], CP.t => 1) >= 0, domain = TC.X)
+			@constraint(model, - s_p + CP.Objective.m - subs(w[nT], t => 1) >= 0, domain = TC.X)
 			obj += s_p*(1-TC.α)
 		end
 	end
@@ -619,18 +622,19 @@ function infinite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abst
 	end
 	nT = length(trange)
 	MP = CP.MP
+	t = MP.time
 	ρ = CP.discount_factor
 	Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
-	T = @set(CP.t >= 0 && CP.t <= 1)
+	T = @set(t >= 0 && t <= 1)
 	XTU = intersect(MP.X,T,CP.U)
 
 	model = SOSModel(solver)
-	@variable(model, w[1:nT-1], Poly(monomials(sort([MP.x...,CP.t],rev=true), 0:d)))
+	@variable(model, w[1:nT-1], Poly(monomials(sort([MP.x...,t],rev=true), 0:d)))
 	@variable(model, w[nT], Poly(monomials(MP.x, 0:d)))
-	@constraint(model, [i in 1:nT-1], CP.Objective.l + extended_inf_generator(MP, w[i], CP.t, scale = Δt[i]) - ρ*w[i] >= 0, domain = XTU)
+	@constraint(model, [i in 1:nT-1], CP.Objective.l + extended_inf_generator(MP, w[i]; scale = Δt[i]) - ρ*w[i] >= 0, domain = XTU)
 	@constraint(model, CP.Objective.l + inf_generator(MP, w[nT]) >= 0, domain = intersect(MP.X, CP.U))
 	@constraint(model, - subs(w[nT]) >= 0, domain = MP.X)
-	obj = expectation(polynomial(subs(w[1], CP.t => 0)), μ0)
+	obj = expectation(polynomial(subs(w[1], t => 0)), μ0)
 	if !isempty(CP.PathChanceConstraints)
 		@warn "Path chance constraints are omitted"
 	end

@@ -5,14 +5,19 @@ mutable struct JumpProcess <: MarkovProcess
     a::Vector{<:APL} # propensities
     h::Vector{Vector{<:APL}} # jumps
     X # state space enclosure
+    time::PV
+    controls::Vector{<:PV}
     poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
-    function JumpProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, X = FullSpace(); poly_vars = Dict())
-        return new(x, a, h, X, poly_vars)
+    function JumpProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, X = FullSpace();
+                         time = @polyvar(t)[1], controls = PV{true}[], poly_vars = Dict())
+         return new(x, a, h, X, time, controls, poly_vars)
     end
 end
 
-JumpProcess(x::PV, a::APL, h::APL, X = FullSpace()) = JumpProcess([x],[a],[[h]],X)
-JumpProcess(x::PV, a::Vector{<:APL}, h::Vector{<:APL}, X = FullSpace()) = JumpProcess([x],a,[[hi] for hi in h],X)
+JumpProcess(x::PV, a::APL, h::APL, X = FullSpace(); time = @polyvar(t)[1], controls = PV{true}[]) =
+            JumpProcess([x], [a], [[h]], X; time=time, controls = (controls isa Vector ? controls : [controls]))
+JumpProcess(x::PV, a::Vector{<:APL}, h::Vector{<:APL}, X = FullSpace(); time = @polyvar(t)[1], controls = PV{true}[]) =
+            JumpProcess([x], a, [[hi] for hi in h], X; time = time, controls = (controls isa Vector ? controls : [controls]))
 
 mutable struct ReactionProcess <: MarkovProcess
     ReactionSystem::ReactionSystem
@@ -40,13 +45,17 @@ mutable struct DiffusionProcess <: MarkovProcess
     f::Vector{<:APL} # drift
     σ::Matrix{<:APL} # diffusion matrix
     X # support
+    time::PV
+    controls::Vector{<:PV}
     poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
-    function DiffusionProcess(x::Vector{<:PV}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace(); poly_vars = Dict())
-        return new(x, f, σ, X, poly_vars)
+    function DiffusionProcess(x::Vector{<:PV}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
+                              time = @polyvar(t)[1], controls = PV{true}[], poly_vars = Dict())
+        return new(x, f, σ, X, time, controls, poly_vars)
     end
 end
 
-DiffusionProcess(x::PV, f::APL, σ::APL, X = FullSpace()) = DiffusionProcess([x], [f], reshape([σ],1,1), X)
+DiffusionProcess(x::PV, f::APL, σ::APL, X = FullSpace(); time::PV = @polyvar(t)[1], controls = PV{true}[]) =
+                 DiffusionProcess([x], [f], reshape([σ],1,1), X; time=time, controls = (controls isa Vector ? controls : [controls]))
 
 mutable struct JumpDiffusionProcess <: MarkovProcess
     x::Vector{<:PV} # state
@@ -55,37 +64,37 @@ mutable struct JumpDiffusionProcess <: MarkovProcess
     f::Vector{<:APL} # drift
     σ::Matrix{<:APL} # diffusion matrix
     X # state space enclosure
+    time::PV
+    controls::Vector{<:PV}
     poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
-    function JumpDiffusionProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace(); poly_vars = Dict())
-        return new(x, a, h, f, σ, X, poly_vars)
+    function JumpDiffusionProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
+                                  time = @polyvar(t)[1], controls = PV{true}[], poly_vars = Dict())
+        return new(x, a, h, f, σ, X, time, controls, poly_vars)
     end
 end
 
-JumpDiffusionProcess(x::PV, a::APL, h::APL, f::APL, σ::APL, X = Fullspace()) = JumpDiffusionProcess([x], [a], [[h]], [f], reshape(σ,1,1), X)
-JumpDiffusionProcess(x::PV, a::Vector{<:APL}, h::Vector{<:APL}, f::APL, σ::APL, X = Fullspace()) = JumpDiffusionProcess([x], a, [[hi] for hi in h], [f], reshape(σ,1,1), X)
+JumpDiffusionProcess(x::PV, a::APL, h::APL, f::APL, σ::APL, X = Fullspace(); time = @polyvar(t)[1], controls = PV{true}[]) =
+                     JumpDiffusionProcess([x], [a], [[h]], [f], reshape(σ,1,1), X; time=time, controls=(controls isa Vector ? controls : [controls]))
+JumpDiffusionProcess(x::PV, a::Vector{<:APL}, h::Vector{<:APL}, f::APL, σ::APL, X = Fullspace(); time = @polyvar(t)[1], controls=PV{true}[]) =
+                     JumpDiffusionProcess([x], a, [[hi] for hi in h], [f], reshape(σ,1,1), X; time=time, controls=(controls isa Vector ? controls : [controls]))
 
 function JumpDiffusionProcess(JP::JumpProcess, DP::DiffusionProcess)
     @assert all(JP.x .== DP.x) "The jump and diffusion process must have the same state"
-    return JumpDiffusionProcess(JP.x, JP.a, JP.h, DP.f, DP.σ, intersect(DP.X, JP.X))
+    return JumpDiffusionProcess(JP.x, JP.a, JP.h, DP.f, DP.σ, intersect(DP.X, JP.X), time = JP.time, controls = JP.controls)
 end
 
 mutable struct ControlProcess
     MP::MarkovProcess
     T::Real  # time horizon
-    u::Vector{<:PV} # control variables
-    t::PV # time variable
-    U # control set
-    Objective
+    U # set of admissible controls
+    Objective # objetive function
     PathChanceConstraints
     TerminalChanceConstraints
     discount_factor
-    function ControlProcess(MP, T, u, t, U, obj, PCs = [], TCs = [], dis_fac = 0)
-        return new(MP, T, u, t, U, obj, PCs, TCs, dis_fac)
+    function ControlProcess(MP::MarkovProcess, T::Real, U, obj, PCs = [], TCs = [], dis_fac = 0)
+        return new(MP, T, U, obj, PCs, TCs, dis_fac)
     end
 end
-
-ControlProcess(MP::MarkovProcess, T::Real, u::PV, t, U, obj, PCs = [], TCs = [], dis_fac = 0) =
-               ControlProcess(MP, T, [u], t, U, obj, PCs, TCs, dis_fac)
 
 mutable struct ExitProbability
     X::BasicSemialgebraicSet
@@ -114,4 +123,4 @@ inf_generator(MP::DiffusionProcess, p::Polynomial) = MP.f'*∂(p,MP.x) + 1/2*sum
 inf_generator(MP::JumpDiffusionProcess, p::Polynomial) = MP.f'*∂(p,MP.x) + 1/2*sum(∂²(p,MP.x,MP.x) .* MP.σ) + sum(MP.a[i]*(subs(p, MP.x => MP.h[i]) - p) for i in 1:length(MP.a))
 #old organization
 #inf_generator(MP::JumpDiffusionProcess, p::Polynomial) = inf_generator(MP.JumpProcess,p) + inf_generator(MP.DiffusionProcess,p)
-extended_inf_generator(MP::MarkovProcess, p::Polynomial, t::PolyVar; scale = 1) = ∂(p,t) + scale*inf_generator(MP, p)
+extended_inf_generator(MP::MarkovProcess, p::Polynomial; scale = 1) = ∂(p,MP.time) + scale*inf_generator(MP, p)

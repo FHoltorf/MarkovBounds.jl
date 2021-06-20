@@ -37,16 +37,16 @@ f = [γ[1] * x[1] - γ[2] * x[1] * x[2] ;
 g = [γ[5]*x[1]; 0] # diffusion coefficient
 σ = polynomial.(g*g') # diffusion matrix
 
-DP = DiffusionProcess(x, f, σ, X)
+DP = DiffusionProcess(x, f, σ, X, time = t, controls = [u])
 """
     In a Second step, we define the control process with its objective function
     and set of admissible control actions.
 """
-U = @set(u >= 0 && u <= 1) # set of admissible controls
+U = @set(u >= 0 && u <= 1) # set of admissible controls|
 stagecost = (x[1]-0.75)^2 + (x[2] - 0.5)^2/10 + (u - 0.5)^2/10
 obj = Lagrange(stagecost) # Lagrange type objective
 T = 10.0 # control horizon
-CP = ControlProcess(DP, T, u, t, U, obj)
+CP = ControlProcess(DP, T, U, obj)
 """
     Now almost everything is set up to determine a lower bound on the objective value
     associated with the control problem CP. We only need to specify the distribution
@@ -80,7 +80,7 @@ V_poly, V_val = value_function(model, trange, t)
 """
 urange = 0:0.05:1
 function controller(x,s)
-    obj = stagecost + extended_inf_generator(DP, V_poly(x,s), t)
+    obj = stagecost + extended_inf_generator(DP, V_poly(x,s))
     return urange[argmin([obj(x...,u,s) for u in urange])]
 end
 

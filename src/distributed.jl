@@ -78,20 +78,21 @@ end
 
 function finite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, trange::AbstractVector{<:Real}, p::Partition, solver)
     MP = CP.MP
+    t = MP.time
     nₜ = length(trange)
     Δt = [trange[1], [trange[i] - trange[i-1] for i in 2:nₜ]...]
 
     model = SOSModel(solver)
 
-    @variable(model, w[vertices(p.graph), k in 1:nₜ], Poly(monomials([MP.x..., CP.t], 0:order)))
+    @variable(model, w[vertices(p.graph), k in 1:nₜ], Poly(monomials([MP.x..., t], 0:order)))
 
     for v in vertices(p.graph), k in 1:nₜ
-        X = intersect(props(p.graph, v)[:cell], @set(CP.t >= 0 && 1-CP.t >= 0), CP.U)
-        @constraint(model, extended_inf_generator(MP, w[v,k], CP.t; scale = Δt[k]) + Δt[k]*CP.Objective.l >= 0, domain = X)
+        X = intersect(props(p.graph, v)[:cell], @set(t >= 0 && 1-t >= 0), CP.U)
+        @constraint(model, extended_inf_generator(MP, w[v,k]; scale = Δt[k]) + Δt[k]*CP.Objective.l >= 0, domain = X)
     end
 
     for v in vertices(p.graph), k in 2:nₜ
-        @constraint(model, subs(w[v,k], CP.t => 0) - subs(w[v,k-1], CP.t => 1) >= 0, domain=props(p.graph, v)[:cell])
+        @constraint(model, subs(w[v,k], t => 0) - subs(w[v,k-1], t => 1) >= 0, domain=props(p.graph, v)[:cell])
     end
 
     for e in edges(p.graph), k in 1:nₜ
@@ -104,37 +105,38 @@ function finite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, trang
                     X = intersect(X, @set(p >= 0))
                 end
             end
-            X = intersect(X, CP.U, @set(CP.t >= 0 && 1-CP.t >= 0))
+            X = intersect(X, CP.U, @set(t >= 0 && 1-t >= 0))
             @constraint(model, subs((w[e.dst,k] - w[e.src,k])*MP.f[i], MP.x[i] => val) >= 0, domain=X)
         else
             @constraint(model, subs(w[e.src,k] - w[e.dst,k], MP.x[i] => val) == 0)
         end
     end
     for v in vertices(p.graph)
-        @constraint(model, CP.Objective.m - subs(w[v,nₜ], CP.t => 1) >= 0, domain = props(p.graph, v)[:cell])
+        @constraint(model, CP.Objective.m - subs(w[v,nₜ], t => 1) >= 0, domain = props(p.graph, v)[:cell])
     end
-    @objective(model, Max, expectation([subs(w[v,1], CP.t => 0) for v in vertices(p.graph)], μ0, p))
+    @objective(model, Max, expectation([subs(w[v,1], t => 0) for v in vertices(p.graph)], μ0, p))
     return model
 end
 
 
 function infinite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, trange::AbstractVector, p::Partition, solver; moments=Dict())
     MP = CP.MP
+    t = MP.time
     nₜ = length(trange)
     Δt = [trange[1], [trange[i] - trange[i-1] for i in 2:nₜ]...]
     ρ = CP.discount_factor
     model = SOSModel(solver)
 
-    @variable(model, w[vertices(p.graph), k in 1:nₜ], Poly(monomials([MP.x..., CP.t], 0:order)))
+    @variable(model, w[vertices(p.graph), k in 1:nₜ], Poly(monomials([MP.x..., t], 0:order)))
     @variable(model, w∞[vertices(p.graph)], Poly(monomials(MP.x, 0:order)))
 
     for v in vertices(p.graph), k in 1:nₜ
-        X = intersect(props(p.graph, v)[:cell], @set(CP.t >= 0 && 1-CP.t >= 0), CP.U)
-        @constraint(model, extended_inf_generator(MP, w[v,k], CP.t; scale = Δt[k]) - ρ*w[v,k] + Δt[k]*CP.Objective.l >= 0, domain = X)
+        X = intersect(props(p.graph, v)[:cell], @set(t >= 0 && 1-t >= 0), CP.U)
+        @constraint(model, extended_inf_generator(MP, w[v,k]; scale = Δt[k]) - ρ*w[v,k] + Δt[k]*CP.Objective.l >= 0, domain = X)
     end
 
     for v in vertices(p.graph), k in 2:nₜ
-        @constraint(model, subs(w[v,k], CP.t => 0) - subs(w[v,k-1], CP.t => 1) >= 0, domain=props(p.graph, v)[:cell])
+        @constraint(model, subs(w[v,k], t => 0) - subs(w[v,k-1], t => 1) >= 0, domain=props(p.graph, v)[:cell])
     end
 
     for e in edges(p.graph), k in 1:nₜ
@@ -147,7 +149,7 @@ function infinite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, tra
                     X = intersect(X, @set(p >= 0))
                 end
             end
-            X = intersect(X, CP.U, @set(CP.t >= 0 && 1-CP.t >= 0))
+            X = intersect(X, CP.U, @set(t >= 0 && 1-t >= 0))
             @constraint(model, subs((w[e.dst,k]-w[e.src,k])*MP.f[i], MP.x[i] => val) >= 0, domain=X)
         else
             @constraint(model, subs(w[e.src,k]-w[e.dst,k], MP.x[i] => val) == 0)
@@ -155,9 +157,9 @@ function infinite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, tra
     end
 
     for v in vertices(p.graph)
-        X = intersect(props(p.graph, v)[:cell], @set(CP.t >= 0), CP.U)
-        @constraint(model, extended_inf_generator(MP, w∞[v], CP.t) - ρ*w∞[v] + CP.Objective.l >= 0, domain = X)
-        @constraint(model, w∞[v] - subs(w[v,nₜ], CP.t => 1) >= 0, domain=props(p.graph, v)[:cell])
+        X = intersect(props(p.graph, v)[:cell], @set(t >= 0), CP.U)
+        @constraint(model, extended_inf_generator(MP, w∞[v]) - ρ*w∞[v] + CP.Objective.l >= 0, domain = X)
+        @constraint(model, w∞[v] - subs(w[v,nₜ], t => 1) >= 0, domain=props(p.graph, v)[:cell])
     end
 
     for e in edges(p.graph), k in 1:nₜ
@@ -170,7 +172,7 @@ function infinite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, tra
                     X = intersect(X, @set(p >= 0))
                 end
             end
-            X = intersect(X, CP.U, @set(CP.t >= 0))
+            X = intersect(X, CP.U, @set(t >= 0))
             @constraint(model, subs((w∞[e.dst]-w∞[e.src])*MP.f[i], MP.x[i] => val) >= 0, domain=X)
         else
             @constraint(model, subs(w∞[e.src]-w∞[e.dst], MP.x[i] => val) == 0)
