@@ -4,62 +4,17 @@ using SymbolicUtils: Add, Mul, Pow, Sym, arguments
 polynomialize_vars(x, u...) = Dict(v.val => PolyVar{true}(string(v.val.name)) for v in vcat(x,u...))
 polynomialize_vars(x) = Dict(v.val => PolyVar{true}(string(v.val.name)) for v in x)
 
-# one can probably do this better via multiple dispatch but for now it does what I want
-function polynomialize_expr(ex, vars)
-    ex = SymbolicUtils.expand(ex)
-    if ex isa SymbolicUtils.Mul
-        poly = parse_prod(SymbolicUtils.arguments(ex), vars)
-    elseif ex isa SymbolicUtils.Add
-        poly = parse_sum(SymbolicUtils.arguments(ex), vars)
-    else
-        @error "Expression $ex cannot be transformed into polynomial type. Potentially bug"
-    end
-    return poly
-end
-
-function parse_sum(args,  vars)
-    poly = 0
-    for tm in args
-        if tm isa Number
-            poly += tm
-        elseif tm isa SymbolicUtils.Mul
-            poly += tm.coeff*prod(vars[var]^tm.dict[var] for var in keys(tm.dict))
-        elseif tm isa SymbolicUtils.Pow
-            @assert tm.exp isa Int "only polynomials are supported"
-            poly += vars[tm.base]^tm.exp
-        elseif tm isa SymbolicUtils.Sym
-            poly += vars[tm]
-        else
-            @error "unsupported component in function"
-        end
-    end
-    return poly
-end
-
-function parse_prod(args, vars)
-    poly = 1
-    for tm in args
-        if tm isa Number
-            poly *= tm
-        elseif tm isa Mul
-            poly *= tm.coeff*prod(vars[var]^tm.dict[var] for var in keys(tm.dict))
-        elseif tm isa Pow
-            @assert tm.exp isa Int "only polynomials are supported"
-            poly *= vars[tm.base]^tm.exp
-        elseif tm isa Sym
-            poly *= vars[tm]
-        else
-            @error "unsupported component in function"
-        end
-    end
-    return poly
-end
-
+# need to find a better check if expression has been expanded. Here I assume that every expression will be supplied as Num.
+# If expression is supplied as NON-EXPANDED SymbolicUtils object, this whole transformation may fail
+# For now good enough.
+polynomialize_expr(ex::Num, vars::Dict) = polynomialize_expr(expand(ex).val, vars)
+polynomialize_expr(ex::Pow, vars::Dict) = vars[ex.base]^ex.exp
+polynomialize_expr(ex::Mul, vars::Dict) = prod(polynomialize_expr(sub_ex, vars) for sub_ex in arguments(ex))
+polynomialize_expr(ex::Add, vars::Dict) = sum(polynomialize_expr(sub_ex, vars) for sub_ex in arguments(ex))
 polynomialize_expr(ex::Sym, vars::Dict) = vars[ex]
-polynomialize_expr(ex::Num, vars::Dict) = polynomialize_expr(ex.val, vars)
-polynomialize_expr(ex::Number, ::Dict) = ex
+polynomialize_expr(ex::Number, vars::Dict) = ex
 
-function polynomialize_expr(exs::T, vars::Dict) where T <: Union{Vector, Matrix}
+function polynomialize_expr(exs::Array{Num}, vars::Dict)
     poly_exs = Array{Polynomial{true, Float64}}(undef, size(exs))
     for (i, ex) in enumerate(exs)
         poly_exs[i] = polynomialize_expr(ex, vars)
@@ -88,42 +43,54 @@ polynomialize_set(S::Num, vars::Dict) = polynomialize_set([S], vars)
 
 ## Process Constructors
 # Jump Processes
-function JumpProcess(x::Vector{Num}, a::Vector{Num}, h::Vector{Vector{Num}}, X = []; u = [])
-    poly_vars = polynomialize_vars(x, u)
+function JumpProcess(x::Vector{Num}, a::Vector{Num}, h::Vector{Vector{Num}}, X = []; time = [], controls = [])
+    poly_vars = polynomialize_vars(x, controls, time)
     a = polynomialize_expr(a, poly_vars)
     h = [polynomialize_expr(hi, poly_vars) for hi in h]
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
-    states = [poly_vars[state] for state in x]
-    return JumpProcess(states, a, h, X_poly, poly_vars = poly_vars)
+    poly_x = [poly_vars[state] for state in x]
+    poly_time = isempty(time) ? @polyvar(t)[1] : poly_vars[time]
+    poly_controls = isempty(controls) ? PV{true}[] : [poly_vars[u] for u in controls]
+    return JumpProcess(poly_x, a, h, X_poly; poly_vars = poly_vars, time = poly_time, controls = poly_controls)
 end
 
-JumpProcess(x::Num, a::Num, h::Num, X = []; u = []) = JumpProcess([x],[a],[[h]],X; u = u)
-JumpProcess(x::Num, a::Vector{Num}, h::Vector{Num}, X = []; u = []) = JumpProcess([x],a,[[hi] for hi in h],X; u = u)
-JumpProcess(x::Num, a::Vector{Num}, h::Vector{Vector{Num}}, X = []; u = []) = JumpProcess([x],a,h,X; u = u)
+JumpProcess(x::Num, a::Num, h::Num, X = []; time = [], controls = []) =
+            JumpProcess([x],[a],[[h]],X; time = time, controls = controls)
+JumpProcess(x::Num, a::Vector{Num}, h::Vector{Num}, X = []; time = [], controls = []) =
+            JumpProcess([x],a,[[hi] for hi in h],X; time = time, controls = controls)
+JumpProcess(x::Num, a::Vector{Num}, h::Vector{Vector{Num}}, X = []; time = [], controls = []) =
+            JumpProcess([x],a,h,X; time = time, controls = controls)
 
 # Diffusion Processes
-function DiffusionProcess(x::Vector{Num}, f::Vector{Num}, σ::Matrix{Num}, X = []; u = [])
-    poly_vars = polynomialize_vars(x, u)
+function DiffusionProcess(x::Vector{Num}, f::Vector{Num}, σ::Matrix{Num}, X = []; time = [], controls = [])
+    poly_vars = polynomialize_vars(x, controls, time)
     f = polynomialize_expr(f, poly_vars)
     σ = polynomialize_expr(σ, poly_vars)
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
-    states = [poly_vars[state] for state in x]
-    return DiffusionProcess(states, f, σ, X_poly, poly_vars = poly_vars)
+    poly_x = [poly_vars[state] for state in x]
+    poly_time = isempty(time) ? @polyvar(t)[1] : poly_vars[time]
+    poly_controls = isempty(controls) ? PV{true}[] : [poly_vars[u] for u in controls]
+    return DiffusionProcess(poly_x, f, σ, X_poly, poly_vars = poly_vars, time = poly_time, controls = poly_controls)
 end
 
-DiffusionProcess(x::Num, f::Num, σ::Num, X = []; u = []) = DiffusionProcess([x], [f], reshape([σ],1,1), X; u = u)
+DiffusionProcess(x::Num, f::Num, σ::Num, X = []; time = [], controls = []) =
+                 DiffusionProcess([x], [f], reshape([σ],1,1), X; time = time, controls = controls)
 
 # Jump-Diffusion process
-function JumpDiffusionProcess(x::Vector{Num}, a::Vector{Num}, h::Vector{Vector{Num}}, f::Vector{Num}, σ::Matrix{Num}, X = []; u = [])
-    poly_vars = polynomialize_vars(x, u)
+function JumpDiffusionProcess(x::Vector{Num}, a::Vector{Num}, h::Vector{Vector{Num}}, f::Vector{Num}, σ::Matrix{Num}, X = []; time = [], controls = [])
+    poly_vars = polynomialize_vars(x, time, controls)
     a = polynomialize_expr(a, poly_vars)
     h = [polynomialize_expr(hi, poly_vars) for hi in h]
     f = polynomialize_expr(f, poly_vars)
     σ = polynomialize_expr(σ, poly_vars)
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
-    states = [poly_vars[state] for state in x]
-    return JumpDiffusionProcess(states, a, h, f, σ, X_poly, poly_vars = poly_vars)
+    poly_x = [poly_vars[state] for state in x]
+    poly_time = isempty(time) ? @polyvar(t)[1] : poly_vars[time]
+    poly_controls = isempty(controls) ? PV{true}[] : [poly_vars[u] for u in controls]
+    return JumpDiffusionProcess(poly_x, a, h, f, σ, X_poly, poly_vars = poly_vars, time = poly_time, controls = poly_controls)
 end
 
-JumpDiffusionProcess(x::Num, a::Num, h::Num, f::APL, σ::APL, X = []; u = []) = JumpDiffusionProcess([x], [a], [[h]], [f], reshape(σ,1,1), X; u = u)
-JumpDiffusionProcess(x::Num, a::Vector{Num}, h::Vector{Num}, f::Num, σ::Num, X = []; u = []) = JumpDiffusionProcess([x], a, [[hi] for hi in h], [f], reshape(σ,1,1), X; u = u)
+JumpDiffusionProcess(x::Num, a::Num, h::Num, f::Num, σ::Num, X = []; time = [], controls = []) =
+                     JumpDiffusionProcess([x], [a], [[h]], [f], reshape([σ],1,1), X; time = time, controls = controls)
+JumpDiffusionProcess(x::Num, a::Vector{Num}, h::Vector{Num}, f::Num, σ::Num, X = []; time = [], controls = []) =
+                     JumpDiffusionProcess([x], a, [[hi] for hi in h], [f], reshape([σ],1,1), X; time = time, controls = controls)

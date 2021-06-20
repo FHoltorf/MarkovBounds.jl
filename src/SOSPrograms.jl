@@ -47,7 +47,7 @@ function stationary_mean(MP::MarkovProcess, v::APL, d::Int, solver)
 end
 
 stationary_mean(RP::ReactionProcess, S, d::Int, solver) = stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver)
-stationary_mean(MP::MarkovProcess, v::Num, d::Int, solver) = stationary_mean(MP.MarkovProcess, polynomialize_expr(v, MP.poly_vars), d, solver)
+stationary_mean(MP::MarkovProcess, v::Num, d::Int, solver) = stationary_mean(MP, polynomialize_expr(v, MP.poly_vars), d, solver)
 
 """
 	stationary_mean(rn::ReactionSystem, S0::Dict, S, d::Int, solver,
@@ -245,7 +245,7 @@ function transient_pop(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::Abs
 end
 
 function transient_pop(MP::MarkovProcess, μ0::Dict, v::Num, d::Int, trange::AbstractVector{<:Real}, solver)
-	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ[mono] for mono in keys(μ0))
+	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[mono] for mono in keys(μ0))
 	return transient_pop(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver)
 end
 
@@ -267,7 +267,7 @@ function transient_polynomial(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, tran
 end
 
 function transient_polynomial(MP::MarkovProcess, μ0::Dict, v::Num, d::Int, trange::AbstractVector{<:Real}, solver)
-	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ[mono] for mono in keys(μ0))
+	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[mono] for mono in keys(μ0))
 	return transient_polynomial(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver)
 end
 
@@ -289,7 +289,7 @@ function transient_mean(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::Ab
 end
 
 function transient_mean(MP::MarkovProcess, μ0::Dict, v::Num, d::Int, trange::AbstractVector{<:Real}, solver)
-	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ[mono] for mono in keys(μ0))
+	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[mono] for mono in keys(μ0))
 	return transient_mean(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver)
 end
 
@@ -349,7 +349,7 @@ function transient_variance(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange
 end
 
 function transient_variance(MP::MarkovProcess, μ0::Dict, v::Num, d::Int, trange::AbstractVector{<:Real}, solver)
-	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ[mono] for mono in keys(μ0))
+	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[mono] for mono in keys(μ0))
 	return transient_variance(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver)
 end
 
@@ -414,7 +414,7 @@ function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{
 end
 
 function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{Num}, d::Int, trange::AbstractVector{<:Real}, solver)
-	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ[mono] for mono in keys(μ0))
+	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[mono] for mono in keys(μ0))
 	return transient_covariance_ellipsoid(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver)
 end
 
