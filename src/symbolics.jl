@@ -14,7 +14,7 @@ polynomialize_expr(ex::Add, vars::Dict) = sum(polynomialize_expr(sub_ex, vars) f
 polynomialize_expr(ex::Sym, vars::Dict) = vars[ex]
 polynomialize_expr(ex::Number, vars::Dict) = ex
 
-function polynomialize_expr(exs::Array{Num}, vars::Dict)
+function polynomialize_expr(exs::Array, vars::Dict)
     poly_exs = Array{Polynomial{true, Float64}}(undef, size(exs))
     for (i, ex) in enumerate(exs)
         poly_exs[i] = polynomialize_expr(ex, vars)
