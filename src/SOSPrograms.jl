@@ -30,6 +30,7 @@ function stationary_polynomial(MP::MarkovProcess, v::APL, d::Int, solver)
     return objective_value(model), termination_status(model), MOI.get(model, MOI.SolveTime())
 end
 
+stationary_polynomial(MP::MarkovProcess, v::Num, d::Int, solver) = stationary_polynomial(MP, polynomialize_expr(v, MP.poly_vars), d, solver)
 
 """
 	stationary_mean(MP::MarkovProcess, v::APL, d::Int, solver)
@@ -46,6 +47,7 @@ function stationary_mean(MP::MarkovProcess, v::APL, d::Int, solver)
 end
 
 stationary_mean(RP::ReactionProcess, S, d::Int, solver) = stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver)
+stationary_mean(MP::MarkovProcess, v::Num, d::Int, solver) = stationary_mean(MP.MarkovProcess, polynomialize_expr(v, MP.poly_vars), d, solver)
 
 """
 	stationary_mean(rn::ReactionSystem, S0::Dict, S, d::Int, solver,
@@ -102,6 +104,7 @@ function stationary_variance(MP::MarkovProcess, v::APL, d::Int, solver)
 end
 
 stationary_variance(RP::ReactionProcess, x, d::Int, solver) = stationary_variance(RP.JumpProcess, RP.species_to_state[x], d, solver)
+stationary_variance(MP::MarkovProcess, x::Num, d::Int, solver) = stationary_variance(MP, polynomialize_expr(x, MP.poly_vars), d, solver)
 
 """
 	stationary_variance(rn::ReactionSystem, S0, x, d::Int, solver,
@@ -165,7 +168,8 @@ function stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{<:APL}, d:
     return exp(-objective_value(model)), termination_status(model), MOI.get(model, MOI.SolveTime())
 end
 
-stationary_covariance_ellipsoid(RP::ReactionProcess, v, d::Int, solver) = stationary_variance(RP.JumpProcess, [RP.species_to_state[x] for x in v], d, solver)
+stationary_covariance_ellipsoid(RP::ReactionProcess, v::Vector, d::Int, solver) = stationary_variance(RP.JumpProcess, [RP.species_to_state[x] for x in v], d, solver)
+stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{Num}, d::Int, solver) = stationary_variance(MP, polynomialize_expr(v, MP.poly_vars), d, solver)
 
 """
 	stationary_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, solver,
@@ -199,7 +203,7 @@ function stationary_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::Abstra
  	return stationary_covariance_ellipsoid(RP.JumpProcess, [RP.species_to_state[x] for x in S], d, solver)
 end
 
-function stationary_covariance_ellipsoid(rn::ReactionSystem, S, d::Int, solver,
+function stationary_covariance_ellipsoid(rn::ReactionSystem, S::Vector, d::Int, solver,
 	 									 scales = Dict(s => 1 for s in species(rn)))
 	RP = setup_reaction_process(rn, scales = scales)
 	return stationary_covariance_ellipsoid(RP.JumpProcess, [RP.species_to_state[x] for x in S], d, solver)
@@ -240,6 +244,10 @@ function transient_pop(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::Abs
     return model
 end
 
+function transient_pop(MP::MarkovProcess, μ0::Dict, v::Num, d::Int, trange::AbstractVector{<:Real}, solver)
+	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ[mono] for mono in keys(μ0))
+	return transient_pop(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver)
+end
 
 """
 	transient_polynomial(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
@@ -258,6 +266,11 @@ function transient_polynomial(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, tran
     return objective_value(model), termination_status(model), MOI.get(model, MOI.SolveTime())
 end
 
+function transient_polynomial(MP::MarkovProcess, μ0::Dict, v::Num, d::Int, trange::AbstractVector{<:Real}, solver)
+	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ[mono] for mono in keys(μ0))
+	return transient_polynomial(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver)
+end
+
 """
 	transient_mean(MP::MarkovProcess, μ0::Dict, x::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
@@ -273,6 +286,11 @@ function transient_mean(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::Ab
     lb, lb_stat, lb_time = transient_polynomial(MP, μ0, v, d, trange, solver)
     ub, ub_stat, ub_time = transient_polynomial(MP, μ0, -v, d, trange, solver)
     return [lb, -ub], [lb_stat,ub_stat], [lb_time, ub_time]
+end
+
+function transient_mean(MP::MarkovProcess, μ0::Dict, v::Num, d::Int, trange::AbstractVector{<:Real}, solver)
+	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ[mono] for mono in keys(μ0))
+	return transient_mean(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver)
 end
 
 """
@@ -328,6 +346,11 @@ function transient_variance(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange
 	@objective(model, Max, expectation(polynomial(subs(w[1], t => 0)), μ0) - S[2])
 	optimize!(model)
 	return -objective_value(model), termination_status(model), MOI.get(model, MOI.SolveTime())
+end
+
+function transient_variance(MP::MarkovProcess, μ0::Dict, v::Num, d::Int, trange::AbstractVector{<:Real}, solver)
+	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ[mono] for mono in keys(μ0))
+	return transient_variance(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver)
 end
 
 """
@@ -388,6 +411,11 @@ function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{
 	@objective(model, Max, expectation(polynomial(subs(w[1], t => 0)), μ0) - S[n+1,n+1] - sum(q))
 	optimize!(model)
 	return exp(-objective_value(model)), termination_status(model), MOI.get(model, MOI.SolveTime())
+end
+
+function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{Num}, d::Int, trange::AbstractVector{<:Real}, solver)
+	μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ[mono] for mono in keys(μ0))
+	return transient_covariance_ellipsoid(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver)
 end
 
 """

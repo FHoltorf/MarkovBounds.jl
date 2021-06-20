@@ -13,10 +13,13 @@ import LinearAlgebra: qr, nullspace, diag, Diagonal, tr, transpose
 import Base: show
 import Parameters: @unpack
 
+using Symbolics, SymbolicUtils
+
 const PV = PolyVar
 const APL = AbstractPolynomialLike
 
 include("processes.jl")
+include("symbolics.jl")
 include("SOSPrograms.jl")
 include("distributed.jl")
 include("print_wrapper.jl")

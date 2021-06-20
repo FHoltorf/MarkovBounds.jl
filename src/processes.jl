@@ -5,8 +5,9 @@ mutable struct JumpProcess <: MarkovProcess
     a::Vector{<:APL} # propensities
     h::Vector{Vector{<:APL}} # jumps
     X # state space enclosure
-    function JumpProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{Vector{T}}, X = FullSpace()) where T <: APL
-        return new(x, a, h, X)
+    poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
+    function JumpProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, X = FullSpace(); poly_vars = Dict())
+        return new(x, a, h, X, poly_vars)
     end
 end
 
@@ -39,8 +40,9 @@ mutable struct DiffusionProcess <: MarkovProcess
     f::Vector{<:APL} # drift
     σ::Matrix{<:APL} # diffusion matrix
     X # support
-    function DiffusionProcess(x::Vector{<:PV}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace())
-        return new(x, f, σ, X)
+    poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
+    function DiffusionProcess(x::Vector{<:PV}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace(); poly_vars = Dict())
+        return new(x, f, σ, X, poly_vars)
     end
 end
 
@@ -53,8 +55,9 @@ mutable struct JumpDiffusionProcess <: MarkovProcess
     f::Vector{<:APL} # drift
     σ::Matrix{<:APL} # diffusion matrix
     X # state space enclosure
-    function JumpDiffusionProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{Vector{<:APL}}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace())# where T <: APL
-        return new(x, a, h, f, σ, X)
+    poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
+    function JumpDiffusionProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace(); poly_vars = Dict())
+        return new(x, a, h, f, σ, X, poly_vars)
     end
 end
 
