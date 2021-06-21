@@ -23,6 +23,7 @@ MetaGraphs = "0.6"
 Parameters = "0.12"
 Reexport = "1"
 SumOfSquares = "0.4"
+Symbolics = "1"
 SymbolicUtils = "0.12"
 julia = "1.6"
 
