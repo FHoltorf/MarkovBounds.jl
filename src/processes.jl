@@ -25,7 +25,7 @@ mutable struct ReactionProcess <: MarkovProcess
     species_to_index::Dict
     species_to_state::Dict
     state_to_species::Dict
-    function ReactionProcess(rn::ReactionSystem)
+    function ReactionProcess(rn::ReactionSystem, params = Dict())
         specs = species(rn)
         S = prodstoichmat(rn) - substoichmat(rn)
         n = length(specs)
@@ -33,7 +33,7 @@ mutable struct ReactionProcess <: MarkovProcess
         spec2idx = Dict(specs[i] => i for i in 1:n)
         spec2state = Dict(specs[i] => x[i] for i in 1:n)
         state2spec = Dict(x[i] => specs[i] for i in 1:n)
-        props = reformat_reactions(reactions(rn), spec2idx, x)
+        props = reformat_reactions(reactions(rn), spec2idx, x, params)
         jumps = reformat_jumps(S, spec2idx, x)
         support = intersect([@set(x[i] >= 0) for i in 1:n]...)
         return new(rn, JumpProcess(x,props,jumps,support), spec2idx, spec2state, state2spec)
