@@ -4,8 +4,9 @@ using Reexport
 using SumOfSquares
 
 @reexport using SumOfSquares: @set, SemialgebraicSets
-@reexport using Catalyst: @reaction_network, @parameters, species, reactions, prodstoichmat,
-                          substoichmat, ReactionSystem, Reaction
+@reexport using Catalyst: @reaction_network, @parameters, species, speciesmap
+                          reactions, prodstoichmat, substoichmat,
+                          ReactionSystem, Reaction
 
 @reexport using DynamicPolynomials: @polyvar, PolyVar, AbstractPolynomialLike,
                                     Polynomial, subs, polynomial, differentiate,

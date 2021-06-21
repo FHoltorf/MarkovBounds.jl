@@ -135,6 +135,7 @@ function stationary_variance(rn::ReactionSystem, S0, S, d::Int, solver,
 	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
  	return stationary_variance(RP.JumpProcess, RP.species_to_state[S], d, solver)
 end
+
 function stationary_variance(rn::ReactionSystem, S, d::Int, solver,
 							 scales = Dict(s => 1 for s in species(rn));
 							 params::Dict = Dict())
