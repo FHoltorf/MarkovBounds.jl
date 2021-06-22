@@ -1,4 +1,4 @@
-using MarkovBoundsSOS, MosekTools, Plots
+using MarkovBoundsSOS, MosekTools, Plots, Catalyst
 
 """
     In this example we wish to study the statistics of the simple nonlinaer birth-

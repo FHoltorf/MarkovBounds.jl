@@ -1,6 +1,3 @@
-using Symbolics: Num, expand
-using SymbolicUtils: Add, Mul, Pow, Sym, arguments
-
 polynomialize_vars(x, u...) = Dict(v.val => PolyVar{true}(string(v.val.name)) for v in vcat(x,u...))
 polynomialize_vars(x) = Dict(v.val => PolyVar{true}(string(v.val.name)) for v in x)
 
