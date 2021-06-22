@@ -9,14 +9,14 @@ mutable struct JumpProcess <: MarkovProcess
     controls::Vector{<:PV}
     poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
     function JumpProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, X = FullSpace();
-                         time = @polyvar(t)[1], controls = PV{true}[], poly_vars = Dict())
+                         time = PV{true}("t"), controls = PV{true}[], poly_vars = Dict())
          return new(x, a, h, X, time, controls, poly_vars)
     end
 end
 
-JumpProcess(x::PV, a::APL, h::APL, X = FullSpace(); time = @polyvar(t)[1], controls = PV{true}[]) =
+JumpProcess(x::PV, a::APL, h::APL, X = FullSpace(); time = PV{true}("t"), controls = PV{true}[]) =
             JumpProcess([x], [a], [[h]], X; time=time, controls = (controls isa Vector ? controls : [controls]))
-JumpProcess(x::PV, a::Vector{<:APL}, h::Vector{<:APL}, X = FullSpace(); time = @polyvar(t)[1], controls = PV{true}[]) =
+JumpProcess(x::PV, a::Vector{<:APL}, h::Vector{<:APL}, X = FullSpace(); time = PV{true}("t"), controls = PV{true}[]) =
             JumpProcess([x], a, [[hi] for hi in h], X; time = time, controls = (controls isa Vector ? controls : [controls]))
 
 mutable struct ReactionProcess <: MarkovProcess
@@ -49,12 +49,12 @@ mutable struct DiffusionProcess <: MarkovProcess
     controls::Vector{<:PV}
     poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
     function DiffusionProcess(x::Vector{<:PV}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
-                              time = @polyvar(t)[1], controls = PV{true}[], poly_vars = Dict())
+                              time = PV{true}("t"), controls = PV{true}[], poly_vars = Dict())
         return new(x, f, σ, X, time, controls, poly_vars)
     end
 end
 
-DiffusionProcess(x::PV, f::APL, σ::APL, X = FullSpace(); time::PV = @polyvar(t)[1], controls = PV{true}[]) =
+DiffusionProcess(x::PV, f::APL, σ::APL, X = FullSpace(); time::PV = PV{true}("t"), controls = PV{true}[]) =
                  DiffusionProcess([x], [f], reshape([σ],1,1), X; time=time, controls = (controls isa Vector ? controls : [controls]))
 
 mutable struct JumpDiffusionProcess <: MarkovProcess
@@ -68,14 +68,14 @@ mutable struct JumpDiffusionProcess <: MarkovProcess
     controls::Vector{<:PV}
     poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
     function JumpDiffusionProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
-                                  time = @polyvar(t)[1], controls = PV{true}[], poly_vars = Dict())
+                                  time = PV{true}("t"), controls = PV{true}[], poly_vars = Dict())
         return new(x, a, h, f, σ, X, time, controls, poly_vars)
     end
 end
 
-JumpDiffusionProcess(x::PV, a::APL, h::APL, f::APL, σ::APL, X = Fullspace(); time = @polyvar(t)[1], controls = PV{true}[]) =
+JumpDiffusionProcess(x::PV, a::APL, h::APL, f::APL, σ::APL, X = Fullspace(); time = PV{true}("t"), controls = PV{true}[]) =
                      JumpDiffusionProcess([x], [a], [[h]], [f], reshape(σ,1,1), X; time=time, controls=(controls isa Vector ? controls : [controls]))
-JumpDiffusionProcess(x::PV, a::Vector{<:APL}, h::Vector{<:APL}, f::APL, σ::APL, X = Fullspace(); time = @polyvar(t)[1], controls=PV{true}[]) =
+JumpDiffusionProcess(x::PV, a::Vector{<:APL}, h::Vector{<:APL}, f::APL, σ::APL, X = Fullspace(); time = PV{true}("t"), controls=PV{true}[]) =
                      JumpDiffusionProcess([x], a, [[hi] for hi in h], [f], reshape(σ,1,1), X; time=time, controls=(controls isa Vector ? controls : [controls]))
 
 function JumpDiffusionProcess(JP::JumpProcess, DP::DiffusionProcess)

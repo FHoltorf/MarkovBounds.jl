@@ -46,7 +46,7 @@ function JumpProcess(x::Vector{Num}, a::Vector{Num}, h::Vector{Vector{Num}}, X =
     h = [polynomialize_expr(hi, poly_vars) for hi in h]
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
     poly_x = [poly_vars[state] for state in x]
-    poly_time = isempty(time) ? @polyvar(t)[1] : poly_vars[time]
+    poly_time = isempty(time) ? PV{true}("t") : poly_vars[time]
     poly_controls = isempty(controls) ? PV{true}[] : [poly_vars[u] for u in controls]
     return JumpProcess(poly_x, a, h, X_poly; poly_vars = poly_vars, time = poly_time, controls = poly_controls)
 end
@@ -65,7 +65,7 @@ function DiffusionProcess(x::Vector{Num}, f::Vector{Num}, σ::Matrix{Num}, X = [
     σ = polynomialize_expr(σ, poly_vars)
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
     poly_x = [poly_vars[state] for state in x]
-    poly_time = isempty(time) ? @polyvar(t)[1] : poly_vars[time]
+    poly_time = isempty(time) ? PV{true}("t") : poly_vars[time]
     poly_controls = isempty(controls) ? PV{true}[] : [poly_vars[u] for u in controls]
     return DiffusionProcess(poly_x, f, σ, X_poly, poly_vars = poly_vars, time = poly_time, controls = poly_controls)
 end
@@ -82,7 +82,7 @@ function JumpDiffusionProcess(x::Vector{Num}, a::Vector{Num}, h::Vector{Vector{N
     σ = polynomialize_expr(σ, poly_vars)
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
     poly_x = [poly_vars[state] for state in x]
-    poly_time = isempty(time) ? @polyvar(t)[1] : poly_vars[time]
+    poly_time = isempty(time) ? PV{true}("t") : poly_vars[time]
     poly_controls = isempty(controls) ? PV{true}[] : [poly_vars[u] for u in controls]
     return JumpDiffusionProcess(poly_x, a, h, f, σ, X_poly, poly_vars = poly_vars, time = poly_time, controls = poly_controls)
 end

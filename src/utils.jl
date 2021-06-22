@@ -72,8 +72,8 @@ function setup_reaction_process(rn::ReactionSystem, x0::Dict;
     return P, x0
 end
 
-function setup_reaction_process(rn::ReactionSystem; scales = Dict(s => 1.0 for s in species(rn)))
-    P = ReactionProcess(rn)
+function setup_reaction_process(rn::ReactionSystem; scales = Dict(s => 1.0 for s in species(rn)), params::Dict = Dict())
+    P = ReactionProcess(rn, params)
     x_scale = [scales[P.state_to_species[x]] for x in P.JumpProcess.x]
     rescale_state!(P, x_scale)
     return P
