@@ -57,7 +57,7 @@ function grid_graph(x, x_ranges)
                     for k in 1:length(n)
                         j = findfirst(m -> m >= x[k], x_ranges[k]) - 1
                         if isnothing(j)
-                            @error "state outside domain"
+                            error("state outside domain")
                         end
                         idx[k] = max(j, 1)
                     end

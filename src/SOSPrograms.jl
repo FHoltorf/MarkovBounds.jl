@@ -483,7 +483,7 @@ function finite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::A
 	elseif isa(CP.Objective, TerminalSetProbability)
 		model = finite_horizon_TP(CP, μ0, d, trange, solver)
 	else
-		@error "Objective function type not supported"
+		error("Objective function type not supported")
 	end
 	return model
 end
@@ -564,7 +564,7 @@ function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 		end
 	end
 	if !isempty(CP.TerminalChanceConstraints)
-		@error "Terminal chance constraints currently not supported for Exit Probability problems!"
+		error("Terminal chance constraints currently not supported for Exit Probability problems!")
 	end
 	@objective(model, Max, obj)
 	return model

@@ -62,7 +62,7 @@ function setup_reaction_process(rn::ReactionSystem, x0::Dict;
     project_into_subspace!(P, [x0[s] for s in species(rn)])
     if auto_scaling
         if solver isa nothing
-            @error "Need to require LP solver if autoscaling is enabled"
+            error("Need specification of LP solver to perform automatic scaling")
         end
         scales = stoich_bounds(rn, x0, solver)
     end
