@@ -165,18 +165,7 @@ function init_moments(x, x0, d)
     return moms
 end
 
-function init_moments(x, x0, d, p::Partition)
-    v0 = p.get_vertex(x0)
-    n = length(x0)
-    moms = Dict()
-    for i in 1:(d+1)^n
-        midx = invert_index(i, (d+1)*ones(Int64,n)) .- 1
-        for v in vertices(p.graph)
-            moms[v,prod(x.^midx)] = (v == v0 ? prod(x0.^midx) : 0.0)
-        end
-    end
-    return moms
-end
+init_moments(x, x0, d, p::Partition) =  Dict(p.get_vertex(x0) => init_moments(x, x0, d))
 
 linearize_index(idx,rs) = idx[1] + (length(idx) > 1 ? sum((idx[i] - 1) * prod(rs[1:i-1]) for i in 2:length(idx)) : 0)
 
@@ -195,24 +184,16 @@ end
 function expectation(w::Polynomial, μ::Dict)
     ex = AffExpr(0.0)
     for i in 1:length(w.a)
-        if !(w.a[i] == 0)
+        if w.a[i] != 0 && μ[w.x[i]] != 0
             ex += w.a[i] * μ[w.x[i]]
         end
     end
     return ex
 end
 
-function expectation(w, μ::Dict, p::Partition)
-    ex = AffExpr(0.0)
-    for v in vertices(p.graph)
-        for i in 1:length(w[v,1].a)
-            if μ[v, w[v].x[i]] != 0
-                ex += w[v].a[i]*μ[v, w[v].x[i]]
-            end
-        end
-    end
-    return ex
-end
+expectation(w::VariableRef, μ::Dict) = w*μ[1]
+expectation(w::Vector{Polynomial{true, VariableRef}}, μ::Dict, p::Partition) = sum(expectation(w[v], μ[v]) for v in keys(μ))
+
 
 function value_function(model, trange, t)
     if trange[1] == 0
