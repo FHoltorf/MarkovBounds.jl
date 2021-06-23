@@ -78,6 +78,7 @@ end
 
 function finite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, trange::AbstractVector{<:Real}, p::Partition, solver)
     MP = CP.MP
+    @assert typeof(MP) == DiffusionProcess
     t = MP.time
     nₜ = length(trange)
     Δt = [trange[1], [trange[i] - trange[i-1] for i in 2:nₜ]...]
@@ -119,8 +120,9 @@ function finite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, trang
 end
 
 
-function infinite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, trange::AbstractVector, p::Partition, solver; moments=Dict())
+function infinite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, trange::AbstractVector, p::Partition, solver)
     MP = CP.MP
+    @assert typeof(MP) == DiffusionProcess
     t = MP.time
     nₜ = length(trange)
     Δt = [trange[1], [trange[i] - trange[i-1] for i in 2:nₜ]...]
