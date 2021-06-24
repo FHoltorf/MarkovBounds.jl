@@ -29,7 +29,7 @@ function grid_graph(x, x_ranges)
     n = length.(x_ranges) .- 1
     nv = prod(n)
 
-    mg = MetaGraph(SimpleGraph(nv))
+    mg = MetaGraph(nv)
     for i in 1:nv
         idx = invert_index(i, n)
         subset = FullSpace()

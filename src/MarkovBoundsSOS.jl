@@ -8,7 +8,7 @@ using SumOfSquares
 @reexport using SumOfSquares: @set, SemialgebraicSets
 
 @reexport using DynamicPolynomials: @polyvar, PolyVar, AbstractPolynomialLike,
-                                    Polynomial, subs, polynomial, differentiate,
+                                    Polynomial, Term, subs, polynomial, differentiate,
                                     MonomialVector, maxdegree
 
 # MTK/Symbolics/SymbolicUtils/Catalyst can also be used to specify moment problem

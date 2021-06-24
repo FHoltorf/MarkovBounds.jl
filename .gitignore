@@ -3,5 +3,5 @@
 *.jl.mem
 /docs/build/
 /examples
-/tutorials_symbolics
+/messing_around
 src/finite_state_projection.jl
