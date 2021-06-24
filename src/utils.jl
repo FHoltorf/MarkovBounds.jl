@@ -192,8 +192,8 @@ function expectation(w::Polynomial, μ::Dict)
 end
 
 expectation(w::VariableRef, μ::Dict) = w*μ[1]
-expectation(w::Vector{Polynomial{true, VariableRef}}, μ::Dict, p::Partition) = sum(expectation(w[v], μ[v]) for v in keys(μ))
-
+expectation(w::Vector{<:APL}, μ::Dict) = sum(expectation(w[v], μ[v]) for v in keys(μ))
+expectation(w::Dict, μ::Dict) = sum(expectation(w[v], μ[v]) for v in keys(μ))
 
 function value_function(model, trange, t)
     if trange[1] == 0
