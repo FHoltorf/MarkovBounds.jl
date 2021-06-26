@@ -1,7 +1,14 @@
-using LightGraphs: edges, vertices, SimpleGraph, add_edge!, Edge
-using MetaGraphs: MetaGraph, props, set_prop!
+export grid_graph, Partition, props, Singleton, @singleton
 
-export grid_graph, Partition, props
+mutable struct Singleton <: AbstractSemialgebraicSet
+    x::AbstractVector
+end
+
+Singleton(x::Real) = Singleton([x])
+
+macro singleton(x)
+    return :(Singleton($(esc(x))))
+end
 
 struct Partition
     graph
@@ -47,7 +54,7 @@ function grid_graph(x, x_ranges)
                 idx[k] += 1
                 j = linearize_index(idx, n)
                 add_edge!(mg, i, j)
-                set_prop!(mg, Edge(i,j), :interface, (k, x_ranges[k][idx[k]]))
+                set_prop!(mg, Edge(i,j), :interface, [@set(x[k] == x_ranges[k][idx[k]])])
                 idx[k] -= 1
             end
         end
@@ -66,120 +73,55 @@ function grid_graph(x, x_ranges)
     return mg, get_vertex
 end
 
-function optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, p::Partition, solver)
-    if isinf(CP.T)
-        model = infinite_horizon_control(CP, μ0, d, trange, p, solver)
-    else
-        model = finite_horizon_control(CP, μ0, d, trange, p, solver)
-    end
-    optimize!(model)
-    return objective_value(model), termination_status(model), MOI.get(model, MOI.SolveTime())
-end
-
-function finite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, trange::AbstractVector{<:Real}, p::Partition, solver)
-    MP = CP.MP
-    @assert typeof(MP) == DiffusionProcess
-    t = MP.time
-    nₜ = length(trange)
-    Δt = [trange[1], [trange[i] - trange[i-1] for i in 2:nₜ]...]
-
-    model = SOSModel(solver)
-
-    @variable(model, w[vertices(p.graph), k in 1:nₜ], Poly(monomials([MP.x..., t], 0:order)))
-
-    for v in vertices(p.graph), k in 1:nₜ
-        X = intersect(props(p.graph, v)[:cell], @set(t >= 0 && 1-t >= 0), CP.U)
-        @constraint(model, extended_inf_generator(MP, w[v,k]; scale = Δt[k]) + Δt[k]*CP.Objective.l >= 0, domain = X)
-    end
-
-    for v in vertices(p.graph), k in 2:nₜ
-        @constraint(model, subs(w[v,k], t => 0) - subs(w[v,k-1], t => 1) >= 0, domain=props(p.graph, v)[:cell])
-    end
-
-    for e in edges(p.graph), k in 1:nₜ
-        i, val = props(p.graph, e)[:interface]
-        if all(subs(MP.σ, MP.x[i] => val) .== 0)
-            X = FullSpace()
-            for p in props(p.graph, e.dst)[:cell].p
-                if !(variables(p) == [MP.x[i]])
-                    p = subs(p, MP.x[i] => val)
-                    X = intersect(X, @set(p >= 0))
-                end
+function check_membership(X::AbstractSemialgebraicSet, x_var, x)
+    is_member = check_membership(X.V)
+    if is_member
+        for ineq in inequalities(X)
+            if ineq(x_var => x) < 0
+                is_member = false
+                break
             end
-            X = intersect(X, CP.U, @set(t >= 0 && 1-t >= 0))
-            @constraint(model, subs((w[e.dst,k] - w[e.src,k])*MP.f[i], MP.x[i] => val) >= 0, domain=X)
-        else
-            @constraint(model, subs(w[e.src,k] - w[e.dst,k], MP.x[i] => val) == 0)
         end
     end
-    for v in vertices(p.graph)
-        @constraint(model, CP.Objective.m - subs(w[v,nₜ], t => 1) >= 0, domain = props(p.graph, v)[:cell])
-    end
-    @objective(model, Max, expectation([subs(w[v,1], t => 0) for v in vertices(p.graph)], μ0, p))
-    return model
+    return is_member
 end
 
-
-function infinite_horizon_control(CP::ControlProcess, μ0::Dict, order::Int, trange::AbstractVector, p::Partition, solver)
-    MP = CP.MP
-    @assert typeof(MP) == DiffusionProcess
-    t = MP.time
-    nₜ = length(trange)
-    Δt = [trange[1], [trange[i] - trange[i-1] for i in 2:nₜ]...]
-    ρ = CP.discount_factor
-    model = SOSModel(solver)
-
-    @variable(model, w[vertices(p.graph), k in 1:nₜ], Poly(monomials([MP.x..., t], 0:order)))
-    @variable(model, w∞[vertices(p.graph)], Poly(monomials(MP.x, 0:order)))
-
-    for v in vertices(p.graph), k in 1:nₜ
-        X = intersect(props(p.graph, v)[:cell], @set(t >= 0 && 1-t >= 0), CP.U)
-        @constraint(model, extended_inf_generator(MP, w[v,k]; scale = Δt[k]) - ρ*w[v,k] + Δt[k]*CP.Objective.l >= 0, domain = X)
-    end
-
-    for v in vertices(p.graph), k in 2:nₜ
-        @constraint(model, subs(w[v,k], t => 0) - subs(w[v,k-1], t => 1) >= 0, domain=props(p.graph, v)[:cell])
-    end
-
-    for e in edges(p.graph), k in 1:nₜ
-        i, val = props(p.graph, e)[:interface]
-        if all(subs(MP.σ, MP.x[i] => val) .== 0)
-            X = FullSpace()
-            for p in props(p.graph, e.dst)[:cell].p
-                if !(variables(p) == [MP.x[i]])
-                    p = subs(p, MP.x[i] => val)
-                    X = intersect(X, @set(p >= 0))
-                end
-            end
-            X = intersect(X, CP.U, @set(t >= 0 && 1-t >= 0))
-            @constraint(model, subs((w[e.dst,k]-w[e.src,k])*MP.f[i], MP.x[i] => val) >= 0, domain=X)
-        else
-            @constraint(model, subs(w[e.src,k]-w[e.dst,k], MP.x[i] => val) == 0)
+function check_membership(X::AbstractAlgebraicSet, x_var, x)
+    is_member = true
+    for eq in equalities(X)
+        if eq(x_var => x) != 0
+            is_member = false
+            break
         end
     end
-
-    for v in vertices(p.graph)
-        X = intersect(props(p.graph, v)[:cell], @set(t >= 0), CP.U)
-        @constraint(model, extended_inf_generator(MP, w∞[v]) - ρ*w∞[v] + CP.Objective.l >= 0, domain = X)
-        @constraint(model, w∞[v] - subs(w[v,nₜ], t => 1) >= 0, domain=props(p.graph, v)[:cell])
-    end
-
-    for e in edges(p.graph), k in 1:nₜ
-        i, val = props(p.graph, e)[:interface]
-        if all(subs(MP.σ, MP.x[i] => val) .== 0)
-            X = FullSpace()
-            for p in props(p.graph, e.dst)[:cell].p
-                if !(variables(p) == [MP.x[i]])
-                    p = subs(p, MP.x[i] => val)
-                    X = intersect(X, @set(p >= 0))
-                end
-            end
-            X = intersect(X, CP.U, @set(t >= 0))
-            @constraint(model, subs((w∞[e.dst]-w∞[e.src])*MP.f[i], MP.x[i] => val) >= 0, domain=X)
-        else
-            @constraint(model, subs(w∞[e.src]-w∞[e.dst], MP.x[i] => val) == 0)
-        end
-    end
-    @objective(model, Max, expectation(w, μ0, p))
-    return model
+    return is_member
 end
+
+check_membership(X::FullSpace, x) = true
+
+# may cause redundant constraints but works for now!
+function complement(X::BasicSemialgebraicSet, H = FullSpace())
+    Ys = []
+    @assert isempty(equalties(X)) "Equality constraints are not allowed when computing the complement"
+    ineqs = inequalities(X)
+    m = length(ineqs)
+    for i in 1:m
+        push!(Ys, intersect(H, BasicSemialgebraicSet(algebraicset(Polynomial{true, Float64}[]),
+                                                     [i == k ? -ineqs[k] : ineqs[k] for k in 1:m])))
+    end
+    return X
+end
+
+function subs_X(X::BasicSemialgebraicSet, submap)
+    eqs = Polynomial{true, Float64}[]
+    for eq in equalities(X)
+        push!(eqs, subs(eq, submap))
+    end
+    ineqs = Polynomial{true, Float64}[]
+    for eq in inequalities(X)
+        push!(ineqs, subs(eq, submap))
+    end
+    return BasicSemialgebraicSet(algebraicset(eqs), ineqs)
+end
+
+# in general this is conservative but holds

@@ -19,7 +19,8 @@ using Catalyst: @reaction_network, @parameters, species, speciesmap,
 
 using Symbolics: Num, expand
 using SymbolicUtils: Add, Mul, Pow, Sym, arguments
-
+using LightGraphs: edges, vertices, SimpleGraph, add_edge!, add_vertex!, Edge
+using MetaGraphs: MetaGraph, MetaDiGraph, props, set_prop!
 
 import LinearAlgebra: qr, nullspace, diag, Diagonal, tr, transpose
 import Base: show
@@ -28,17 +29,16 @@ import Parameters: @unpack
 const PV = PolyVar
 const APL = AbstractPolynomialLike
 
+include("distributed.jl")
 include("processes.jl")
 include("symbolics.jl")
-include("SOSPrograms.jl")
-include("distributed.jl")
 include("print_wrapper.jl")
 include("utils.jl")
+include("problem_setup.jl")
+include("sos_programs_stationary.jl")
+include("sos_programs_transient.jl")
+include("sos_programs_control.jl")
 
-export JumpProcess, ReactionProcess, DiffusionProcess, JumpDiffusionProcess, ControlProcess,
-       LagrangeMayer, Lagrange, Mayer, ExitProbability, TerminalSetProbability,
-       setup_reaction_process, inf_generator, extended_inf_generator,
-       stationary_polynomial, stationary_mean, stationary_variance, stationary_covariance_ellipsoid,
-       transient_polynomial, transient_mean, transient_variance, transient_covariance_ellipsoid,
-       optimal_control, value_function
+
+
 end

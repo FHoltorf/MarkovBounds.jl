@@ -38,6 +38,7 @@ Objective Function: $(CP.Objective)")
 Base.show(io::IO, obj::LagrangeMayer) = println(io,
 "𝔼[∫ $(obj.l) dt + $(obj.m)]")
 
+Base.show(io::IO, S::Singleton) = println(io,"{ $(S.x) }")
 
 function print_wo_type(A::AbstractArray)
   str = string(A)
