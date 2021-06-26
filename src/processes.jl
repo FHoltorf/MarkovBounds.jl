@@ -153,7 +153,7 @@ function inf_generator(MP::JumpProcess, w::Dict, v::Int, p::Partition)
     gen = 0
     for i in 1:length(MP.a)
         prop = MP.a[i](MP.x => x_v)
-        if prop != 0
+        if abs(prop) >= 1e-10
             x_u = [h(MP.x => x_v) for h in MP.h[i]]
             u = p.get_vertex(x_u)
             if props(p.graph, u)[:cell] isa Singleton
