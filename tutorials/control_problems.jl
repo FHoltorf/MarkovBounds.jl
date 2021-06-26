@@ -64,7 +64,7 @@ order = 6
 x0 = [1.0, 0.25]
 μ0 = Dict(x[1]^i*x[2]^j => x0[1]^i*x0[2]^j for i in 0:order+1, j in 0:order+1) # moments of initial distribution
 trange = range(0, T, length = 11) # discretization of time horizon
-b, ~, ~, model = optimal_control(CP, μ0, order, trange, Mosek.Optimizer)
+b = optimal_control(CP, μ0, order, trange, Mosek.Optimizer)
 """
     From the model output we can further identify a polynomial approximation to
     the value function. If the time horizon is discretized in more than one piece,
@@ -74,13 +74,13 @@ b, ~, ~, model = optimal_control(CP, μ0, order, trange, Mosek.Optimizer)
     polynomial, while the second output is a function that directly evaluates this
     polynomial at (x,t):
 """
-V_poly, V_val = value_function(model, trange, t)
+V_poly, V_val = value_function(CP, trange, b)
 """
     This information can be used to construct controllers as shown in the following
 """
 urange = 0:0.05:1
 function controller(x,s)
-    obj = stagecost + extended_inf_generator(DP, V_poly(x,s))
+    obj = stagecost + extended_inf_generator(DP, V_poly(s,x))
     return urange[argmin([obj(x...,u,s) for u in urange])]
 end
 

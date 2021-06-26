@@ -65,12 +65,12 @@ A_scale = Dict(A => 10.0)
 mean_bounds = []
 orders = [2, 4, 6, 8]
 for order in orders
-    b, s, c = stationary_mean(BD, A, order, Mosek.Optimizer, A_scale)
+    b = stationary_mean(BD, A, order, Mosek.Optimizer, A_scale)
     push!(mean_bounds, b)
 end
-p = plot(orders, [b[1] for b in mean_bounds], color=:blue, label="lower bound",
+p = plot(orders, [b[1].value for b in mean_bounds], color=:blue, label="lower bound",
          xlabel="order", ylabel="molecular count [-]")
-plot!(p, orders, [b[2] for b in mean_bounds], color=:red, label="upper bound")
+plot!(p, orders, [b[2].value for b in mean_bounds], color=:red, label="upper bound")
 display(p)
 """
     Similarly, we can compute an upper bound on the variance of the stationary
@@ -79,10 +79,10 @@ display(p)
 var_ub = []
 orders = [2, 4, 6, 8]
 for order in orders
-    b, s, c = stationary_variance(BD, A, order, Mosek.Optimizer, A_scale)
+    b = stationary_variance(BD, A, order, Mosek.Optimizer, A_scale)
     push!(var_ub, b)
 end
-p = plot(orders, var_ub, color=:red, label="upper bound",
+p = plot(orders, [var.value for var in var_ub], color=:red, label="upper bound",
          xlabel="order", ylabel="molecular count [-]")
 display(p)
 """
@@ -105,10 +105,10 @@ RP, x0 = setup_reaction_process(BD, A0, scales = A_scale)
 """
 var_lb = []
 for order in orders
-    b, s, c = stationary_polynomial(RP.JumpProcess, RP.species_to_state[A]^2, order, Mosek.Optimizer)
+    b = stationary_polynomial(RP.JumpProcess, RP.species_to_state[A]^2, order, Mosek.Optimizer)
     push!(var_lb, b)
 end
-plot!(p, orders, var_lb - [b[2]^2 for b in mean_bounds], color=:blue, label="lower bound")
+plot!(p, orders, [var.value for var in var_lb] - [b[2].value^2 for b in mean_bounds], color=:blue, label="lower bound")
 display(p)
 """
     Everything presented above generalizes to the problem of bounding the expectation
@@ -134,13 +134,13 @@ nT = 10 # number of intervals used to discretize the time domain
 Ts = [0.1, 0.5, 1.0, 1.5, 2.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0]
 for T in Ts
     trange = range(0, T, length=nT+1)
-    b, s, c = transient_mean(BD, A0, A, 4, trange, Mosek.Optimizer, A_scale)
+    b = transient_mean(BD, A0, A, 4, trange, Mosek.Optimizer, A_scale)
     push!(mean_bounds, b)
-    b, s, c = transient_variance(BD, A0, A, 4, trange, Mosek.Optimizer, A_scale)
+    b = transient_variance(BD, A0, A, 4, trange, Mosek.Optimizer, A_scale)
     push!(var_ub, b)
 end
-p = plot(Ts, var_ub, color=:red, linestyle=:dash, label="upper bound on Var[A(t)]",
+p = plot(Ts, [var.value for var in var_ub], color=:red, linestyle=:dash, label="upper bound on Var[A(t)]",
          xlabel="time",
          ylabel="molecular count", legend = :bottomright)
-plot!(p, Ts, [b[1] for b in mean_bounds], color=:blue, label="lower bound on 𝔼[A(t)]")
-plot!(p, Ts, [b[1] for b in mean_bounds], color=:red, label="upper bound on 𝔼[A(t)]")
+plot!(p, Ts, [b[1].value for b in mean_bounds], color=:blue, label="lower bound on 𝔼[A(t)]")
+plot!(p, Ts, [b[1].value for b in mean_bounds], color=:red, label="upper bound on 𝔼[A(t)]")

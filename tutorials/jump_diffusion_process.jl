@@ -32,8 +32,8 @@ DP = DiffusionProcess(x, f, g, X)
     With the diffusion process defined, we can bound interesting quantities such
     as the long term average or variance of the interest rate x simply by calling
 """
-mean, ~, ~ = stationary_mean(DP, x, 2, Mosek.Optimizer)
-var, ~, ~ = stationary_variance(DP, x, 2, Mosek.Optimizer)
+mean = stationary_mean(DP, x, 2, Mosek.Optimizer)
+var = stationary_variance(DP, x, 2, Mosek.Optimizer)
 """
     similarly, bounds along a trajectory can be evaluated with ease.
     In order to showcase how also jump-diffusion are dealt with, let us assume
@@ -65,13 +65,13 @@ nT = 10 # number of time intervals used to discretize the time domain
 var_bounds, mean_bounds = [], []
 for T in Ts
     trange = range(0, T, length=nT + 1)
-    mean, ~, ~ = transient_mean(JDP, μ0, x, order, trange, Mosek.Optimizer)
+    mean = transient_mean(JDP, μ0, x, order, trange, Mosek.Optimizer)
     push!(mean_bounds, mean)
-    var, ~, ~ = transient_variance(JDP, μ0, x, order, trange, Mosek.Optimizer)
+    var = transient_variance(JDP, μ0, x, order, trange, Mosek.Optimizer)
     push!(var_bounds, var)
 end
 p = plot(xlabel="time", ylabel="interest rate", legend=:bottomright)
-plot!(p, Ts, [b[1] for b in mean_bounds], color=:blue, label="mean lower bound")
-plot!(p, Ts, [b[2] for b in mean_bounds], color=:red, label="mean upper bound")
-plot!(p, Ts, sqrt.(var_bounds), color=:red, linestyle=:dash, label="std upper bound")
+plot!(p, Ts, [b[1].value for b in mean_bounds], color=:blue, label="mean lower bound")
+plot!(p, Ts, [b[2].value for b in mean_bounds], color=:red, label="mean upper bound")
+plot!(p, Ts, sqrt.([var.value for var in var_bounds]), color=:red, linestyle=:dash, label="std upper bound")
 display(p)
