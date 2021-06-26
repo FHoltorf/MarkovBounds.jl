@@ -268,7 +268,7 @@ function stationary_probability_mass(MP::MarkovProcess, X::BasicSemialgebraicSet
 	model, w = stationary_indicator(MP, order, 1, P, solver; sense = 1) # Max
 	optimize!(model)
 	ub = Bound(-objective_value(model), model, P, Dict(v => value(w[v]) for v in vertices(P.graph)))
-	model, w = stationary_indicator(MP, order, v, P, solve; sense = -1) # Min
+	model, w = stationary_indicator(MP, order, 1, P, solve; sense = -1) # Min
 	optimize!(model)
 	lb = Bound(objective_value(model), model, P, Dict(v => value(w[v]) for v in vertices(P.graph)))
  	return lb, ub
