@@ -1,4 +1,4 @@
-export setup_reaction_process, stoich_bounds, transform_state!, rescale_state!,
+export reaction_process_setup, stoich_bounds, transform_state!, rescale_state!,
        value_function
 
 stoichmat(rn::ReactionSystem) = prodstoichmat(rn) - substoichmat(rn)
@@ -49,7 +49,7 @@ function stoich_bounds(rn::ReactionSystem, x0::Dict, solver)
 end
 
 """
-    setup_reaction_process(rn::ReactionSystem, x0::Dict;
+    reaction_process_setup(rn::ReactionSystem, x0::Dict;
                     scales = Dict(s => 1.0 for s in species(rn)),
                     auto_scaling = false, solver = nothing)
 
@@ -57,7 +57,7 @@ end
     into an equivalent ReactionProcess accounting for reaction invariants and
     scales.
 """
-function setup_reaction_process(rn::ReactionSystem, x0::Dict;
+function reaction_process_setup(rn::ReactionSystem, x0::Dict;
                                 scales = Dict(s => 1.0 for s in species(rn)),
                                 auto_scaling = false, solver = nothing,
                                 params::Dict = Dict())
@@ -75,7 +75,7 @@ function setup_reaction_process(rn::ReactionSystem, x0::Dict;
     return P, x0
 end
 
-function setup_reaction_process(rn::ReactionSystem; scales = Dict(s => 1.0 for s in species(rn)), params::Dict = Dict())
+function reaction_process_setup(rn::ReactionSystem; scales = Dict(s => 1.0 for s in species(rn)), params::Dict = Dict())
     P = ReactionProcess(rn, params)
     x_scale = [scales[P.state_to_species[x]] for x in P.JumpProcess.x]
     rescale_state!(P, x_scale)

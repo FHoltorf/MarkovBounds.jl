@@ -85,14 +85,14 @@ unknown or irrelevant, simply call
 function stationary_mean(rn::ReactionSystem, S0::Dict, S, d::Int, solver,
 	 					 scales = Dict(s => 1 for s in species(rn));
 						 params::Dict = Dict(), auto_scaling = false)
-	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
+	RP, S0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
  	return stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver)
 end
 
 function stationary_mean(rn::ReactionSystem, S, d::Int, solver,
 					     scales = Dict(s => 1 for s in species(rn));
 						 params::Dict = Dict())
-	RP = setup_reaction_process(rn, scales = scales, params = params)
+	RP = reaction_process_setup(rn, scales = scales, params = params)
 	return stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver)
 end
 
@@ -154,14 +154,14 @@ unknown or irrelevant, simply call
 function stationary_variance(rn::ReactionSystem, S0, S, d::Int, solver,
 	 						 scales = Dict(s => 1 for s in species(rn));
 							 auto_scaling = false, params::Dict = Dict())
-	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
+	RP, S0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
  	return stationary_variance(RP.JumpProcess, RP.species_to_state[S], d, solver)
 end
 
 function stationary_variance(rn::ReactionSystem, S, d::Int, solver,
 							 scales = Dict(s => 1 for s in species(rn));
 							 params::Dict = Dict())
-	RP = setup_reaction_process(rn, scales = scales, params = params)
+	RP = reaction_process_setup(rn, scales = scales, params = params)
 	return stationary_variance(RP.JumpProcess, RP.species_to_state[S], d, solver)
 end
 
@@ -239,14 +239,14 @@ unknown or irrelevant, simply call
 function stationary_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, solver,
 	 									 scales = Dict(s => 1 for s in species(rn));
 										 auto_scaling = false, params::Dict = Dict())
-	RP, x0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
+	RP, x0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
  	return stationary_covariance_ellipsoid(RP.JumpProcess, [RP.species_to_state[x] for x in S], d, solver)
 end
 
 function stationary_covariance_ellipsoid(rn::ReactionSystem, S::Vector, d::Int, solver,
 	 									 scales = Dict(s => 1 for s in species(rn));
 										 params::Dict = Dict())
-	RP = setup_reaction_process(rn, scales = scales, params = params)
+	RP = reaction_process_setup(rn, scales = scales, params = params)
 	return stationary_covariance_ellipsoid(RP.JumpProcess, [RP.species_to_state[x] for x in S], d, solver)
 end
 

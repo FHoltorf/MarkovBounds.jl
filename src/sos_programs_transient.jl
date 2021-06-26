@@ -126,7 +126,7 @@ constraints (via LP).
 function transient_mean(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Number}, solver,
 		  				scales = Dict(s => 1 for s in species(rn));
 						params::Dict = Dict(), auto_scaling = false)
-	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
+	RP, S0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
 	μ0 = init_moments(RP.JumpProcess.x, S0, d + maximum(maxdegree.(RP.JumpProcess.a)))
  	return transient_mean(RP.JumpProcess, μ0, RP.species_to_state[S], d, trange, solver)
 end
@@ -201,7 +201,7 @@ constraints (via LP).
 function transient_variance(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Real}, solver,
 						    scales = Dict(s => 1 for s in species(rn));
 							auto_scaling = false, params::Dict = Dict())
-	RP, S0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
+	RP, S0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
 	μ0 = init_moments(RP.JumpProcess.x, S0, d + maximum(maxdegree.(RP.JumpProcess.a)))
  	return transient_variance(RP.JumpProcess, μ0, RP.species_to_state[S], d, trange, solver)
 end
@@ -283,7 +283,7 @@ constraints (via LP).
 function transient_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, trange::AbstractVector{<:Real}, solver,
 										scales = Dict(s => 1 for s in species(rn));
 										auto_scaling = false, params::Dict = Dict())
-	RP, x0 = setup_reaction_process(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
+	RP, x0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
 	μ0 = init_moments(RP.JumpProcess.x, x0, d + maximum(maxdegree.(RP.JumpProcess.a)))
  	return transient_covariance_ellipsoid(RP.JumpProcess, μ0, [RP.species_to_state[x] for x in S], d, trange, solver)
 end
