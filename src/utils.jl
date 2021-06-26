@@ -97,25 +97,25 @@ function transform_state!(P::ReactionProcess, x::AbstractVector, z::AbstractVect
     transform_state!(P.JumpProcess, x, z; iv = iv)
 end
 
-function rescale_state!(P::DiffusionProcess, x0::Vector{<:Number})
+function rescale_state!(P::DiffusionProcess, x0::Vector{<:Real})
     transform_state!(P, P.x, P.x .* x0)
     P.f ./= x0
     P.σ ./= x0*x0'
 end
 
-function rescale_state!(P::JumpProcess, x0::Vector{<:Number})
+function rescale_state!(P::JumpProcess, x0::Vector{<:Real})
     transform_state!(P, P.x, P.x .* x0)
     for i in 1:length(P.h)
         P.h[i] ./= x0
     end
 end
 
-function rescale_state!(P::JumpDiffusionProcess, x0::Vector{<:Number})
+function rescale_state!(P::JumpDiffusionProcess, x0::Vector{<:Real})
     rescale_state!(P.JumpProcess.x, x0)
     rescale_state!(P.DiffusionProcess.x, x0)
 end
 
-function rescale_state!(P::ReactionProcess, x0::Vector{<:Number})
+function rescale_state!(P::ReactionProcess, x0::Vector{<:Real})
     transform_state!(P, P.JumpProcess.x, P.JumpProcess.x .* x0)
     for i in 1:length(P.JumpProcess.h)
         P.JumpProcess.h[i] ./= x0
@@ -139,7 +139,7 @@ function partition_variables(B)
     return is, ds, Q, R
 end
 
-function project_into_subspace!(P::MarkovProcess, B, f::Vector{<:Number})
+function project_into_subspace!(P::MarkovProcess, B, f::Vector{<:Real})
     iv, dv, Q, R = partition_variables(B)
     if !isempty(dv)
         z = Vector{Polynomial}(undef, size(B,2))
@@ -150,7 +150,7 @@ function project_into_subspace!(P::MarkovProcess, B, f::Vector{<:Number})
     end
 end
 
-function project_into_subspace!(P::ReactionProcess, x0::Vector{<:Number})
+function project_into_subspace!(P::ReactionProcess, x0::Vector{<:Real})
     B = transpose(nullspace(stoichmat(P.ReactionSystem)))
     if !isempty(B)
         f = B*x0
