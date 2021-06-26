@@ -265,20 +265,14 @@ defined partition of the state space.
 """
 function stationary_probability_mass(MP::MarkovProcess, X::BasicSemialgebraicSet, order::Int, solver)
 	P = split_state_space(MP, X)
-	model, w = stationary_indicator(MP, order, 1, P, solver; sense = 1) # Max
-	optimize!(model)
-	ub = Bound(-objective_value(model), model, P, Dict(v => value(w[v]) for v in vertices(P.graph)))
-	model, w = stationary_indicator(MP, order, 1, P, solve; sense = -1) # Min
-	optimize!(model)
-	lb = Bound(objective_value(model), model, P, Dict(v => value(w[v]) for v in vertices(P.graph)))
- 	return lb, ub
+ 	return stationary_probability_mass(MP, 1, order, solver, P)
 end
 
 function stationary_probability_mass(MP::MarkovProcess, v::Int, order::Int, solver, P::Partition)
-	model, w = stationary_indicator(MP, order, v, P, solver; sense = 1) # Max
+	model, w = stationary_indicator(MP, v, order, P, solver; sense = 1) # Max
 	optimize!(model)
 	ub = Bound(-objective_value(model), model, P, Dict(v => value(w[v]) for v in vertices(P.graph)))
-	model, w = stationary_indicator(MP, order, v, P, solve; sense = -1) # Min
+	model, w = stationary_indicator(MP, v, order, P, solver; sense = -1) # Min
 	optimize!(model)
 	lb = Bound(objective_value(model), model, P, Dict(v => value(w[v]) for v in vertices(P.graph)))
  	return lb, ub

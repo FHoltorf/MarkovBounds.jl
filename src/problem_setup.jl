@@ -13,7 +13,7 @@ function add_stationarity_constraints!(model::Model, MP::MarkovProcess, v::Int, 
 end
 
 function add_stationarity_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition, domain::Singleton, w, rhs)
-    @constraint(model, inf_generator(MP, w, v, P) >= rhs)
+	@constraint(model, inf_generator(MP, w, v, P) >= rhs)
 end
 
 function add_coupling_constraints!(model::Model, MP::MarkovProcess, e::Edge, P::Partition, w)
@@ -34,7 +34,7 @@ function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::P
     nT = length(Δt)
     t = MP.time
     @constraint(model, [k in 1:nT], extended_inf_generator(MP, w, (k, v), P; scale = Δt[k]) - ρ*w[k, v] >= Δt[k]*rhs, domain = time_domain)
-    @constraint(model, [k in 2:nT], w[k, v](t => 0) - w[k-1][v](t => 1) >= 0)
+    @constraint(model, [k in 2:nT], w[k, v](t => 0) - w[k-1, v](t => 1) >= 0)
 end
 
 function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition,
@@ -44,7 +44,7 @@ function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::P
     nT = length(Δt)
     t = MP.time
     @constraint(model, [k in 1:nT], extended_inf_generator(MP, w, (k, v), P; scale = Δt[k])  - ρ*w[k, v] >= Δt[k]*rhs(MP.x => space_domain.x), domain = time_domain)
-    @constraint(model, [k in 2:nT], w[k, v](t => 0) - w[k-1][v](t => 1) >= 0)
+    @constraint(model, [k in 2:nT], w[k, v](t => 0) - w[k-1,v](t => 1) >= 0)
 end
 
 function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition,
@@ -67,7 +67,7 @@ function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::P
     for X in space_domain
         XT = intersect(X,time_domain)
         @constraint(model, [k in 1:nT], extended_inf_generator(MP, w[k, v]; scale = Δt[k]) - ρ*w[k, v] >= Δt[k]*rhs, domain = XT)
-        @constraint(model, [k in 2:nT], subs(w[k, v], t => 0) - subs(w[k-1][v], t => 1) >= 0, domain = X)
+        @constraint(model, [k in 2:nT], subs(w[k, v], t => 0) - subs(w[k-1,v], t => 1) >= 0, domain = X)
     end
 end
 

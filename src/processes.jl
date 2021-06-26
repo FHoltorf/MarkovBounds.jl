@@ -139,6 +139,24 @@ function inf_generator(MP::JumpProcess, w::Dict, idx::Tuple{Int, Int}, p::Partit
             x_u = [h(MP.x => x_v) for h in MP.h[i]]
             u = p.get_vertex(x_u)
             if props(p.graph, u)[:cell] isa Singleton
+                gen += prop*(w[k,u] - w[k,v])
+            else
+                gen += prop*(w[k,u](MP.x => x_u) - w[k,v])
+            end
+        end
+    end
+    return gen
+end
+
+function inf_generator(MP::JumpProcess, w::Dict, v::Int, p::Partition)
+    x_v = props(p.graph, v)[:cell].x
+    gen = 0
+    for i in 1:length(MP.a)
+        prop = MP.a[i](MP.x => x_v)
+        if prop != 0
+            x_u = [h(MP.x => x_v) for h in MP.h[i]]
+            u = p.get_vertex(x_u)
+            if props(p.graph, u)[:cell] isa Singleton
                 gen += prop*(w[u] - w[v])
             else
                 gen += prop*(w[u](MP.x => x_u) - w[v])
@@ -147,6 +165,7 @@ function inf_generator(MP::JumpProcess, w::Dict, idx::Tuple{Int, Int}, p::Partit
     end
     return gen
 end
+
 extended_inf_generator(MP::JumpProcess, w, v, p::Partition; scale = 1) = ∂(w[v],MP.time) + scale*inf_generator(MP, w, v, p)
 
 mutable struct Bound
