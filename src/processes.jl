@@ -1,3 +1,8 @@
+export JumpProcess, ReactionProcess, DiffusionProcess, JumpDiffusionProcess, ControlProcess,
+       MarkovProcess, LagrangeMayer, Lagrange, Mayer, ExitProbability, TerminalSetProbability,
+       inf_generator, extended_inf_generator
+
+
 abstract type MarkovProcess end
 
 mutable struct JumpProcess <: MarkovProcess
@@ -117,8 +122,36 @@ mutable struct ChanceConstraint
     α::Real # confidence level
 end
 
-inf_generator(MP::JumpProcess, p::Polynomial) = sum(MP.a[i]*(subs(p, MP.x => MP.h[i]) - p) for i in 1:length(MP.a))
-inf_generator(MP::ReactionProcess, p::Polynomial) = inf_generator(MP.JumpProcess,p)
-inf_generator(MP::DiffusionProcess, p::Polynomial) = MP.f'*∂(p,MP.x) + 1/2*sum(∂²(p,MP.x,MP.x) .* MP.σ)
-inf_generator(MP::JumpDiffusionProcess, p::Polynomial) = MP.f'*∂(p,MP.x) + 1/2*sum(∂²(p,MP.x,MP.x) .* MP.σ) + sum(MP.a[i]*(subs(p, MP.x => MP.h[i]) - p) for i in 1:length(MP.a))
-extended_inf_generator(MP::MarkovProcess, p::Polynomial; scale = 1) = ∂(p,MP.time) + scale*inf_generator(MP, p)
+
+inf_generator(MP::JumpProcess, w::Polynomial) = sum(MP.a[i]*(subs(w, MP.x => MP.h[i]) - w) for i in 1:length(MP.a))
+inf_generator(MP::ReactionProcess, w::Polynomial) = inf_generator(MP.JumpProcess,w)
+inf_generator(MP::DiffusionProcess, w::Polynomial) = MP.f'*∂(w,MP.x) + 1/2*sum(∂²(w,MP.x,MP.x) .* MP.σ)
+inf_generator(MP::JumpDiffusionProcess, w::Polynomial) = MP.f'*∂(w,MP.x) + 1/2*sum(∂²(w,MP.x,MP.x) .* MP.σ) + sum(MP.a[i]*(subs(w, MP.x => MP.h[i]) - w) for i in 1:length(MP.a))
+extended_inf_generator(MP::MarkovProcess, w::Polynomial; scale = 1) = ∂(w,MP.time) + scale*inf_generator(MP, w)
+
+function inf_generator(MP::JumpProcess, w::Dict, idx::Tuple{Int, Int}, p::Partition)
+    k, v = idx
+    x_v = props(p.graph, v)[:cell].x
+    gen = 0
+    for i in 1:length(MP.a)
+        prop = MP.a[i](MP.x => x_v)
+        if prop != 0
+            x_u = [h(MP.x => x_v) for h in MP.h[i]]
+            u = p.get_vertex(x_u)
+            if props(p.graph, u)[:cell] isa Singleton
+                gen += prop*(w[u] - w[v])
+            else
+                gen += prop*(w[u](MP.x => x_u) - w[v])
+            end
+        end
+    end
+    return gen
+end
+extended_inf_generator(MP::JumpProcess, w, v, p::Partition; scale = 1) = ∂(w[v],MP.time) + scale*inf_generator(MP, w, v, p)
+
+mutable struct Bound
+    value::Real
+    model::Model
+    partition::Partition
+    w
+end

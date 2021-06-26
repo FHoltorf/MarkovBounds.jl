@@ -1,10 +1,13 @@
+export setup_reaction_process, stoich_bounds, transform_state!, rescale_state!,
+       value_function
+
 stoichmat(rn::ReactionSystem) = prodstoichmat(rn) - substoichmat(rn)
 
 reformat_jumps(S::Matrix, species_to_index::Dict, x::AbstractVector) = [x .+ S[i,:] for i in 1:size(S,1)]
 
 ∂(p,x) = differentiate.(p,x)
 ∂²(p,x,y) = differentiate(∂(p,x),y)
-∂(X) = [intersect(@set(X.p[i] == 0), [@set(X.p[k] >= 0) for k in 1:length(X.p) if k != i]..., X.V) for i in 1:length(X.p)]
+∂(X::BasicSemialgebraicSet) = [intersect(@set(X.p[i] == 0), [@set(X.p[k] >= 0) for k in 1:length(X.p) if k != i]..., X.V) for i in 1:length(X.p)]
 
 function reformat_reactions(rxns::Vector{Reaction}, species_to_index::Dict, x::Vector{<:PV}, params = Dict())
     props = APL[]
@@ -192,17 +195,15 @@ function expectation(w::Polynomial, μ::Dict)
 end
 
 expectation(w::VariableRef, μ::Dict) = w*μ[1]
-expectation(w::Vector{<:APL}, μ::Dict) = sum(expectation(w[v], μ[v]) for v in keys(μ))
+expectation(w::AbstractVector, μ::Dict) = sum(expectation(w[v], μ[v]) for v in keys(μ))
 expectation(w::Dict, μ::Dict) = sum(expectation(w[v], μ[v]) for v in keys(μ))
 
-function value_function(model, trange, t)
+function value_function(CP::ControlProcess, trange, bound::Bound)
     if trange[1] == 0
         trange = trange[2:end]
     end
-    Δt = [i == 1 ? trange[i] : trange[i] - trange[i-1] for i in 1:length(trange)]
-    V_pieces = [subs(value(model[:w][i]), t => (t - (i == 1 ? 0 : trange[i-1]))/Δt[i]) for i in keys(model[:w])]
-    V_poly(x,t) = V_pieces[get_piece(t, trange)]
-    V_val(x,t) = V_poly(x,t)(x..., t)
+    V_poly(t,x) = bound.w[get_piece(t, trange), bound.partition.get_vertex(x)]
+    V_val(t,x) = V_poly(t,x)(CP.MP.time => t, CP.MP.x => x)
     return V_poly, V_val
 end
 
@@ -216,4 +217,26 @@ function get_piece(t, trange)
         i = findfirst(ti -> ti > t, trange)
     end
     return i
+end
+
+function trivial_partition(X::AbstractSemialgebraicSet)
+    G = MetaDiGraph()
+    add_vertex!(G, :cell, X)
+    return Partition(G, x -> 1)
+end
+
+function split_state_space(MP::MarkovProcess, X::BasicSemialgebraicSet)
+    Xc = complement(X, MP.X)
+    G = MetaDiGraph()
+    add_vertex!(G, 1, :cell, X)
+    add_vertex!(G, 2, :cell, Xc)
+    add_edge!(G, 1, 2, ∂(X))
+    return Partition(G, x -> check_membership(x, X) ? 1 : 2)
+end
+
+function dual_poly(w, t, trange)
+    if trange[1] == 0
+        trange = trange[2:end]
+    end
+    return Dict(key => subs(value(w[key]), t => key[1] > 1 ? (t - trange[key[1]-1])/(trange[key[1]] - trange[key[1]-1]) : t/trange[key[1]]) for key in keys(w))
 end
