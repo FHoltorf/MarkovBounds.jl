@@ -62,7 +62,7 @@ function reaction_process_setup(rn::ReactionSystem, x0::Dict;
                                 auto_scaling = false, solver = nothing,
                                 params::Dict = Dict())
     P = ReactionProcess(rn, params)
-    project_into_subspace!(P, [x0[s] for s in species(rn)])
+    project_into_subspace!(P, Float64[x0[s] for s in species(rn)])
     if auto_scaling
         if solver isa nothing
             error("Need specification of LP solver to perform automatic scaling")
@@ -77,7 +77,7 @@ end
 
 function reaction_process_setup(rn::ReactionSystem; scales = Dict(s => 1.0 for s in species(rn)), params::Dict = Dict())
     P = ReactionProcess(rn, params)
-    x_scale = [scales[P.state_to_species[x]] for x in P.JumpProcess.x]
+    x_scale = Float64[scales[P.state_to_species[x]] for x in P.JumpProcess.x]
     rescale_state!(P, x_scale)
     return P
 end
