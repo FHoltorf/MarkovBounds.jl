@@ -21,8 +21,12 @@ function add_coupling_constraints!(model::Model, MP::MarkovProcess, e::Edge, P::
          @constraint(model, w[e.dst] - w[e.src](MP.x => props(P.graph, e.dst)[:cell].x) == 0)
     else
         Xs = props(P.graph, e)[:interface]
-        for X in Xs
-            @constraint(model, w[e.dst] - w[e.src] == 0, domain = X)
+        if Xs isa AbstractVector
+            for X in Xs # TODO FIX THIS
+                @constraint(model, w[e.dst] - w[e.src] == 0, domain = X)
+            end
+        else
+            @cosntraint(model, w[e.dst] - w[e.src] == 0, domain = Xs)
         end
     end
 end
