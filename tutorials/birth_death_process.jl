@@ -93,13 +93,13 @@ display(p)
     previously computed upper bound on 𝔼[A] to find a valid lower bound
     on the variance Var[A] = 𝔼[A²] - 𝔼[A]². To that end, we first transform
     the reaction network into a ReactionProcess using the function
-    `setup_reaction_process`. This ReactionProcess features a jump process that is
+    `reaction_process_setup`. This ReactionProcess features a jump process that is
     equivalent to the reaction network, however, accounts for potential
     reaction invariants and applies scales to the state. Moreover, the ReactionProcess
     provides a map between the molecular species of the network on the states of
     the jump process for easy interpretation of the results.
 """
-RP, x0 = setup_reaction_process(BD, A0, scales = A_scale)
+RP, x0 = reaction_process_setup(BD, A0, scales = A_scale)
 """
     Now we can compute a lower bound on Var(A)
 """

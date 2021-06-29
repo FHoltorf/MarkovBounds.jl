@@ -64,7 +64,7 @@ nT = 10 # number of time intervals used to discretize the time domain
 μ0 = Dict(x^i => x0^i for i in 0:order+1) # moments of the initial distribution
 var_bounds, mean_bounds = [], []
 for T in Ts
-    trange = range(0, T, length=nT + 1)
+    trange = range(0, T, length = nT + 1)
     mean = transient_mean(JDP, μ0, x, order, trange, Mosek.Optimizer)
     push!(mean_bounds, mean)
     var = transient_variance(JDP, μ0, x, order, trange, Mosek.Optimizer)
