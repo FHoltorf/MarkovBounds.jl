@@ -26,7 +26,7 @@ function add_coupling_constraints!(model::Model, MP::MarkovProcess, e::Edge, P::
                 @constraint(model, w[e.dst] - w[e.src] == 0, domain = X)
             end
         else
-            @cosntraint(model, w[e.dst] - w[e.src] == 0, domain = Xs)
+            @constraint(model, w[e.dst] - w[e.src] == 0, domain = Xs)
         end
     end
 end
