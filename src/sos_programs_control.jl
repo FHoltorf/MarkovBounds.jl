@@ -55,7 +55,7 @@ function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
     model = SOSModel(solver)
     w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1], Poly(monomials(t, 0:d)))[1] :
-                    @variable(model, [1], Poly(monomials(vcat(MP.x, t), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+                    @variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
 
     for v in vertices(P.graph)
         add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], intersect(T, CP.U), Δt, w, - CP.Objective.l)
@@ -74,7 +74,7 @@ function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 		# TODO: improve formulation to take advantage of partition
 		for PC in CP.PathChanceConstraints
 			s_pc = @variable(model)
-			w_pc = @variable(model, [1:nT], Poly(monomials(sort(vcat(MP.x, t),rev=true), 0:d)))
+			w_pc = @variable(model, [1:nT], Poly(monomials(sort(sort(vcat(MP.x, t), rev = true),rev=true), 0:d)))
 			add_path_chance_constraint!(model, MP, PC, intersect(T, CP.U), Δt, w_pc, s_pc)
 			obj += s_pc*(1-PC.α)
 		end
@@ -104,7 +104,7 @@ function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 	model = SOSModel(solver)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1], Poly(monomials(t, 0:d)))[1] :
-                    @variable(model, [1], Poly(monomials(vcat(MP.x, t), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+                    @variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
 
 	∂X = ∂(CP.Objective.X)
 	for v in vertices(P.graph)
@@ -147,7 +147,7 @@ function finite_horizon_TP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 	model = SOSModel(solver)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1], Poly(monomials(t, 0:d)))[1] :
-                    @variable(model, [1], Poly(monomials(vcat(MP.x, t), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+                    @variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
 
 	for v in vertices(P.graph)
 		add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], intersect(T, CP.U), Δt, w, 0)
@@ -206,7 +206,7 @@ function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange:
     model = SOSModel(solver)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1], Poly(monomials(t, 0:d)))[1] :
-                    @variable(model, [1], Poly(monomials(vcat(MP.x, t), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+                    @variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
 	w∞ = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
 					@variable(model) :
 					@variable(model, [1], Poly(monomials(MP.x, 0:d)))[1]) for v in vertices(P.graph))
