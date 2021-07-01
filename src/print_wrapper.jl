@@ -38,10 +38,42 @@ Objective Function: $(CP.Objective)")
 Base.show(io::IO, obj::LagrangeMayer) = println(io,
 "𝔼[∫ $(obj.l) dt + $(obj.m)]")
 
+Base.show(io::IO, bound::Bound) = println(io,
+"$(bound.value) $(interpret_status(termination_status(bound.model), primal_status(bound.model)))")
+
 Base.show(io::IO, S::Singleton) = println(io,"{ $(S.x) }")
 
 function print_wo_type(A::AbstractArray)
   str = string(A)
   idx = findfirst('[', string(A))
   return str[idx:end]
+end
+
+function interpret_status(opt_status, feas_status)
+  if feas_status == MOI.FEASIBLE_POINT
+      status = "valid"
+  elseif feas_status == MOI.NEARLY_FEASIBLE_POINT
+      status = "likely valid"
+  elseif feas_status == MOI.INFEASIBLE_POINT
+      status = "invalid"
+  else
+      status = "unknown"
+  end
+
+  if opt_status == MOI.OPTIMAL
+      status *= " (optimal)"
+  elseif opt_status == MOI.ALMOST_OPTIMAL
+      status *= " (near optimal)"
+  elseif opt_status == MOI.INFEASIBLE
+      status *= " (infeasible)"
+  elseif opt_status == MOI.SLOW_PROGRESS
+      status *= " (potentially suboptimal)"
+  elseif opt_status == MOI.MEMORY_LIMIT
+      status *= " (memory limit exceeded)"
+  elseif opt_status == MOI.OBJECTIVE_LIMIT
+      status *= " (objective limit exceeded)"
+  else
+      status *= " (unkown)"
+  end
+  return status
 end
