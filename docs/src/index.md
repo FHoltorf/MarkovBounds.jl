@@ -1,10 +1,10 @@
 ```@meta
-CurrentModule = MarkovBoundsSOS
+CurrentModule = MarkovBounds
 ```
 
-# MarkovBoundsSOS Documentation
+# MarkovBounds.jl Documentation
 
-Documentation for [MarkovBoundsSOS](https://github.com/FHoltorf/MarkovBoundsSOS.jl).
+Documentation for [MarkovBounds](https://github.com/FHoltorf/MarkovBounds.jl).
 
 # Bounds on Stationary Moments of Markov Processes
 ```@docs
