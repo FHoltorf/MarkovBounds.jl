@@ -71,7 +71,7 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
-[[MarkovBoundsSOS]]
+[[MarkovBounds]]
 path = ".."
 uuid = "153e1d4e-790f-4e3f-9036-fea9f57be94e"
 version = "0.1.0"
