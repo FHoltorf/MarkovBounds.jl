@@ -55,9 +55,9 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
-            using MarkovBoundsSOS
-            DocMeta.setdocmeta!(MarkovBoundsSOS, :DocTestSetup, :(using MarkovBoundsSOS); recursive=true)
-            doctest(MarkovBoundsSOS)'
+            using MarkovBounds
+            DocMeta.setdocmeta!(MarkovBounds, :DocTestSetup, :(using MarkovBounds); recursive=true)
+            doctest(MarkovBounds)'
       - run: julia --project=docs docs/make.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
