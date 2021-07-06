@@ -1,4 +1,4 @@
-using MarkovBoundsSOS, COSMO
+using MarkovBounds, COSMO
 using Test
 
 opt = COSMO

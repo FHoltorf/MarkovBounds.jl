@@ -1,4 +1,4 @@
-using MarkovBoundsSOS, Plots, MosekTools
+using MarkovBounds, Plots, MosekTools
 """
     Beyond jump processes modeling stochastic chemical systems, a much wider range
     of stochastic processes admits computable bounds on stationary and transient

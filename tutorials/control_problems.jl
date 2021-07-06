@@ -1,4 +1,4 @@
-using MarkovBoundsSOS, MosekTools, Plots, DifferentialEquations
+using MarkovBounds, MosekTools, Plots, DifferentialEquations
 """
     The same techniques used for studying the statistics ofstochastic processes
     can be used to study different variations of stochastic optimal control problems.

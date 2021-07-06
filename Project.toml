@@ -1,4 +1,4 @@
-name = "MarkovBoundsSOS"
+name = "MarkovBounds"
 uuid = "153e1d4e-790f-4e3f-9036-fea9f57be94e"
 authors = ["Flemming Holtorf"]
 version = "0.1.0"

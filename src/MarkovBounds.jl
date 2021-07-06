@@ -1,4 +1,4 @@
-module MarkovBoundsSOS
+module MarkovBounds
 
 using Reexport
 using SumOfSquares
