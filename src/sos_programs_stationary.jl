@@ -81,7 +81,6 @@ unknown or irrelevant, simply call
 	stationary_mean(rn::ReactionSystem, S, d::Int, solver,
 			scales = Dict(s => 1 for s in species(rn))).
 """
-# TODO: Aad supprot for partitioning
 function stationary_mean(rn::ReactionSystem, S0::Dict, S, d::Int, solver,
 	 					 scales = Dict(s => 1 for s in species(rn));
 						 params::Dict = Dict(), auto_scaling = false)
@@ -175,7 +174,6 @@ The bounds are computed via an SOS program of degree d, hence can be tightened
 by increasing d. This computation requires a solver that can deal with
 exponential cone constraints.
 """
-
 function stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{<:APL}, d::Int, solver, P::Partition = trivial_partition(MP.X))
     n = length(v)
     model = SOSModel(solver)
