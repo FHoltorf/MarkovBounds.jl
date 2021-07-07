@@ -11,4 +11,5 @@ Moment bounding schemes enable the computation of *hard, theoretically guarantee
 * variances
 * the volume of confidence ellipsoids of polynomial expressions
 * the probability mass of key events characterized by membership of the process state in a basic closed semialgebraic set
+
 These techniques further extend naturally to computing bounds on the optimal value of many finite horizon and (discounted) infinite horizon optimal control problems. 
