@@ -22,6 +22,13 @@ The analysis of jump-diffusion processes relies traditionally on brute force sam
 ## Optimal Control Problems
 Moment bounding schemes extend naturally to the application of (stochastic) optimal control problems with jump-diffusion processes embedded, where they allow to compute hard bounds on the optimal value. Such bounds can either be used in branch-and-bound algorithms for global optimization or simply as a way to certify optimality of a given control policy. Moreover, the bounding problems provide insights to control policy design by yielding a piecewise polynomial subsolution of the value function as byproduct. 
 
+## Installation
+You can install MarkovBounds.jl via Julia's package manager
+```julia
+ ]add https://github.com/FHoltorf/MarkovBounds.jl
+```
+Moreover, most functionalities of MarkovBounds.jl rely on a semidefinite programming (SDP) solver that is supported by JuMP/MathOptInterface. So please make sure that the SDP solver that you are planning on using is featured on this [list](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers). While you can choose any SDP solver from this [list](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers), we recommend to use either [Mosek](https://www.mosek.com/) or [SeDuMi](https://github.com/sqlp/sedumi) as they have shown the best results in our tests, both in terms of robustness and speed.
+
 # Background on Moment Bounding Schemes
 
 ## Jump-Diffusion Processes
@@ -42,16 +49,19 @@ A fundamental assumption in MarkovBounds.jl (and to a large extent moment boundi
 ## Moment Bounding Schemes
 The core idea behind moment bounding schemes is rather simple. But to explain it, we first need to establish some notation: Let ``y_i(t) = \mathbb{E} \left[ \prod_{k=1}^n x_k(t)^{i_k} \right]`` denote the moment corresponding to the multi-index ``i \in \mathbb{N}_{0}^n`` of a polynomial jump-diffusion process as defined the previous section. Similarly, let ``\mathbf{y}_{q}(t)``  be the truncated sequence of all multivariate moments of the process up to order ``q \in \mathbb{N}``, i.e., ``\mathbf{y}_q(t) = \{ y_i(t) | |i| \leq q \}``. Due to the notorious moment closure problem, ``\mathbf{y}_q(t)`` cannot in general be computed directly via simple simulation. To circumvent this issue, moment bounding schemes seek to identify a proxy for ``\mathbf{y}_q(t)``, say ``\tilde{\mathbf{y}}_q(t)``, which minimizes (or maximizes if upper bound is sought) a certain statistic of the process under investigation, while ensuring that ``\tilde{\mathbf{y}}_q(t)`` remains in certain ways consistent with the process under investigation (we will see shortly what that means concretely). Slightly more formally, we seek to solve an optimization problem of the form
 ```math
-\begin{align} 
+\begin{aligned} 
     \inf_{\tilde{\mathbf{y}}_q} \quad &\int_{0}^T l^\top \tilde{\mathbf{y}}_q(t) \, dt + m^\top \tilde{\mathbf{y}}_q(T) \\
     \text{s.t.} \quad & \tilde{\mathbf{y}}_q \text{ satisfies necessary consistency conditions.} 
-\end{align}
+\end{aligned}
 ```
 The key insight underpinning all moment bounding schemes now is that a suitable choice of "necessary consistency conditions" turns the above "pseudo" optimization problem into a convex optimization problem known as generalized moment problem. The practical value of this observations lies in the fact that strong convex relaxations of these generalized moment problems are easily constructed and they can be readily solved with off-the-shelve semidefinite programming (SDP) solvers such as Mosek, SeDuMi or SDPT3. 
 
 But what are these "necessary consistency conditions"? We won't answer this question in detail here but provide some examples and intuition for their nature. The above mentioned consistency conditions can be loosely classified as a) reflecting the dynamics of the underlying process and b) the support of its distribution. Conditions of type a) are affine relations that the moments of process have to satisfy. To derive these conditions, note that the (extended) infinitesimal generator
 ```math
-    \mathcal{A} : w(t,z) \to \lim_{h\to 0^+} \frac{\mathbb{E_z[w(t + h,x(t + h))]} - w(t,z)}{h} = \frac{ \partial w(t,z) }{\partial t } + f(z)^\top \nabla_z w(t,z) + \text{Tr}\left(gg^\top(z) \nabla_z^2 w(t,z) \right) + \sum_{i=1}^{n_R} a_i(z) w(t, h_i(z))
+    \begin{aligned}
+        \mathcal{A} : w(t,z) \mapsto &\lim_{h\to 0^+} \frac{\mathbb{E_z[w(t + h,x(t + h))]} - w(t,z)}{h} \\
+                                &= \frac{ \partial w(t,z) }{\partial t } + f(z)^\top \nabla_z w(t,z) + \text{Tr}\left(gg^\top(z) \nabla_z^2 w(t,z) \right) + \sum_{i=1}^{n_R} a_i(z) w(t, h_i(z))
+    \end{aligned}
 ```
 maps polynomials to polynomials under the assumption of a polynomial jump diffusion process. The moments of a polynomial jump-diffusion process accordingly follow linear, albeit generally underdetermined, dynamics:
 ```math
@@ -80,42 +90,20 @@ must hold, reflecting the support of the probability distribution ``P(\cdot,t)``
 
 For more details and technicalities on moment bounding schemes, please consult the references below.
 
-# Bounds on Stationary Moments of Markov Processes
-
-```@docs
-stationary_polynomial(MP::MarkovProcess, v::APL, d::Int, solver)
-stationary_mean(MP::MarkovProcess, v::APL, d::Int, solver)
-stationary_mean(rn::ReactionSystem, S0::Dict, S, d::Int, solver,
-                scales = Dict(s => 1 for s in speceies(rn));
-                auto_scaling = false)
-stationary_variance(MP::MarkovProcess, v::APL, d::Int, solver)
-stationary_variance(rn::ReactionSystem, S0, x, d::Int, solver,
-                    scales = Dict(s => 1 for s in speceies(rn));
-                    auto_scaling = false)
-stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{<:APL}, d::Int, solver)
-stationary_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, solver,
-                                scales = Dict(s => 1 for s in speceies(rn));
-                                auto_scaling = false)
-```
-
-# Bounds on Transient Moments of Markov Processes
-```@docs
-transient_polynomial(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
-transient_mean(MP::MarkovProcess, μ0::Dict, x::APL, d::Int, trange::AbstractVector{<:Real}, solver)
-transient_mean(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Number}, solver,
-            scales = Dict(s => 1 for s in speceies(rn));
-            auto_scaling = false)
-transient_variance(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
-transient_variance(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Real}, solver,
-            scales = Dict(s => 1 for s in speceies(rn));
-            auto_scaling = false)
-transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{APL}, d::Int, trange::AbstractVector{<:Real}, solver)
-transient_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, trange::AbstractVector{<:Real}, solver,
-            scales = Dict(s => 1 for s in speceies(rn));
-            auto_scaling = false)
-```
-
-# Bounds on Stochastic Optimal Control Problems
-```@docs
-optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
-```
+## References on Moment Bounding Schemes
+[1] Holtorf, Flemming, and Paul I. Barton. "Tighter bounds on transient moments of stochastic chemical systems." arXiv preprint arXiv:2104.01309 (2021).
+[2] Kuntz, Juan, et al. "Bounding the stationary distributions of the chemical master equation via mathematical programming." The Journal of chemical physics 151.3 (2019): 034109.
+[3] Dowdy, Garrett R., and Paul I. Barton. "Dynamic bounds on stochastic chemical kinetic systems using semidefinite programming." The Journal of chemical physics 149.7 (2018): 074103.
+[4] Dowdy, Garrett R., and Paul I. Barton. "Bounds on stochastic chemical kinetic systems at steady state." The Journal of chemical physics 148.8 (2018): 084106.
+[5] Sakurai, Yuta, and Yutaka Hori. "Bounding transient moments of stochastic chemical reactions." IEEE Control Systems Letters 3.2 (2018): 290-295.
+[6] Sakurai, Yuta, and Yutaka Hori. "Optimization-based synthesis of stochastic biocircuits with statistical specifications." Journal of The Royal Society Interface 15.138 (2018): 20170709.
+[7] Ghusinga, Khem Raj, et al. "Exact lower and upper bounds on stationary moments in stochastic biochemical systems." Physical biology 14.4 (2017): 04LT01
+[8] Sakurai, Yuta, and Yutaka Hori. "A convex approach to steady state moment analysis for stochastic chemical reactions." 2017 IEEE 56th Annual Conference on Decision and Control (CDC). IEEE, 2017.
+[9] Kuntz, Juan, et al. "Bounding stationary averages of polynomial diffusions via semidefinite programming." SIAM Journal on Scientific Computing 38.6 (2016): A3891-A3920.
+[10] Lasserre, Jean B. Moments, positive polynomials and their applications. Vol. 1. World Scientific, 2009.
+[11] Savorgnan, Carlo, Jean B. Lasserre, and Moritz Diehl. "Discrete-time stochastic optimal control via occupation measures and moment relaxations." Proceedings of the 48h IEEE Conference on Decision and Control (CDC) held jointly with 2009 28th Chinese Control Conference. IEEE, 2009.
+[12] Lasserre, Jean B., Tomas Prieto‐Rumeau, and Mihail Zervos. "Pricing a class of exotic options via moments and SDP relaxations." Mathematical Finance 16.3 (2006): 469-494.
+[13] Lasserre, Jean B. "Global optimization with polynomials and the problem of moments." SIAM Journal on optimization 11.3 (2001): 796-817.
+[14] Helmes, Kurt, Stefan Röhl, and Richard H. Stockbridge. "Computing moments of the exit time distribution for Markov processes by linear programming." Operations Research 49.4 (2001): 516-530.
+[15] Schwerer, Elizabeth. "A linear programming approach to the steady-state analysis of reflected Brownian motion." (2001): 341-368.
+[16] Bhatt, Abhay G., and Vivek S. Borkar. "Occupation measures for controlled Markov processes: Characterization and optimality." The Annals of Probability (1996): 1531-1562.
