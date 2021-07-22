@@ -3,16 +3,16 @@ export optimal_control
 """
 	optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
 
-returns a *lower* bound on the objective value of the (stochastic) optimal
-control problem specified by CP. μ0 encodes information about the distribution of
-the initial state of the process; specifically, μ0 maps a given monomial to the
+returns a **lower** bound on the objective value of the (stochastic) optimal
+control problem specified by CP. `μ0` encodes information about the distribution of
+the initial state of the process; specifically, `μ0` maps a given monomial to the
 corresponding moment of the initial distribution. trange refers to an *ordered*
 set of time points discretizing the control horizon. trange[end] should coincide
-with the end of the control horizon, i.e., trange[end] = Inf in case of an infinite
+with the end of the control horizon, i.e., `trange[end] = Inf` in case of an infinite
 horizon problem. The bound is computed via a SOS program of degree d solved with
 an appropriate method given by solver.
 
-The bound can be tightened by populating trange or increasing d.
+The bound can be tightened by populating trange or increasing `d`.
 """
 function optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
 	if trange[1] == 0
