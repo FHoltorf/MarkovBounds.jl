@@ -1,3 +1,7 @@
+```@meta
+CurrentModule = MarkovBounds
+```
+
 # Bounds on Stationary Moments of Markov Processes
 
 ```@docs

@@ -1,7 +1,3 @@
-```@meta
-CurrentModule = MarkovBounds
-```
-
 # MarkovBounds.jl 
 
 [MarkovBounds.jl](https://github.com/FHoltorf/MarkovBounds.jl) is a Julia package seeking to automate the setup of moment bounding schemes for the analysis of jump-diffusion processes with the goal of enabling those unfamiliar with moment problems or optimization in general to apply moment bounding schemes regardless. To that end, MarkovBounds.jl automatically translates high-level problem data framing a jump-diffusion process as specified via convenient tools such as [Catalyst.jl](https://github.com/SciML/Catalyst.jl), [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl)/[ModelingToolkit.jl](https://github.com/SciML/ModelingToolkit.jl) or [DynamicPolynomials.jl](https://github.com/JuliaAlgebra/DynamicPolynomials.jl) into [sum-of-squares (SOS) programs](https://en.wikipedia.org/wiki/Sum-of-squares_optimization) and solve them via the existing optimization pipeline in Julia (see [SumOfSquares.jl](https://github.com/jump-dev/SumOfSquares.jl), [JuMP](https://github.com/jump-dev/JuMP.jl) and [MathOptInterface.jl](https://github.com/jump-dev/MathOptInterface.jl)). The solution of said SOS programs are returned to the user in form of theoretically guaranteed bounds on moments and other key statistics of the process under investigation.
@@ -11,7 +7,7 @@ CurrentModule = MarkovBounds
 
 
 # When should you consider using moment bounding schemes?
-Moment bounding schemes are limited by the capabilities of large-scale semidefinite programming. Given the current state-of-the-art, moment bounding schemes are practically limited to stochastic processes of low to medium dimensionality (< 10 states). Moreover, MarkovBounds.jl currently *only* supports processes in which the data can be fully characterized in terms of *polynomials* (see [Background](#background-on-moment-bounding-schemes) for details). 
+Moment bounding schemes are limited by the capabilities of large-scale semidefinite programming. Given the current state-of-the-art, moment bounding schemes are practically limited to stochastic processes of low to medium dimensionality (< 10 states). Moreover, MarkovBounds.jl currently *only* supports processes in which the data can be fully characterized in terms of *polynomials* (see the [Background](background) section for details). 
 
 ## Stationary Distributions
 Moment bounding schemes have been found to perform remarkably well for the study of the stationary (or ergodic) statistics of stochastic processes. They have been found to provide high quality (often effectively tight) bounds on key statistics such as means, variances, Fano factors and more at a fraction of the computational time needed to provide similarly accurate sample statistics. 
@@ -29,7 +25,7 @@ You can install MarkovBounds.jl via Julia's package manager
 ```
 Moreover, most functionalities of MarkovBounds.jl rely on a semidefinite programming (SDP) solver that is supported by JuMP/MathOptInterface. So please make sure that the SDP solver that you are planning on using is featured on this [list](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers). While you can choose any SDP solver from this [list](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers), we recommend to use either [Mosek](https://www.mosek.com/) or [SeDuMi](https://github.com/sqlp/sedumi) as they have shown the best results in our tests, both in terms of robustness and speed.
 
-# Background on Moment Bounding Schemes
+# [Background on Moment Bounding Schemes](@id background)
 
 ## Jump-Diffusion Processes
 A jump-diffusion process is dynamical system combining a deterministic evolution of the system state, called drift, with a stochastic component modeling stochastic vibrations, called diffusion, and another stochastic component modeling discrete changes, called jumps. The evolution of the process state ``x_t`` over time ``t`` through its state space ``X \subset \mathbb{R}^n`` is governed by the following stochastic differential equation
