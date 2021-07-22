@@ -3,6 +3,19 @@ CurrentModule = MarkovBounds
 ```
 # Functionalities of MarkovBounds.jl
 
+## Problem Specification
+```@docs
+MarkovProcess
+JumpProcess
+ReactionProcess
+DiffusionProcess
+JumpDiffusionProcess
+ControlProcess
+LagrangeMayer
+TerminalSetProbability
+ExitProbability
+```
+
 ## Bounds on Stationary Moments of Markov Processes
 
 ```@docs
