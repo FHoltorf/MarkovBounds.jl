@@ -1,8 +1,9 @@
 ```@meta
 CurrentModule = MarkovBounds
 ```
+# Functionalities of MarkovBounds.jl
 
-# Bounds on Stationary Moments of Markov Processes
+## Bounds on Stationary Moments of Markov Processes
 
 ```@docs
 stationary_polynomial(MP::MarkovProcess, v::APL, d::Int, solver)
@@ -20,7 +21,7 @@ stationary_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector,
                                 auto_scaling = false)
 ```
 
-# Bounds on Transient Moments of Markov Processes
+## Bounds on Transient Moments of Markov Processes
 ```@docs
 transient_polynomial(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 transient_mean(MP::MarkovProcess, μ0::Dict, x::APL, d::Int, trange::AbstractVector{<:Real}, solver)
@@ -37,7 +38,7 @@ transient_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, 
             auto_scaling = false)
 ```
 
-# Bounds on Stochastic Optimal Control Problems
+## Bounds on Stochastic Optimal Control Problems
 ```@docs
 optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
 ```
