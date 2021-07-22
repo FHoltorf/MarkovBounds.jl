@@ -207,7 +207,7 @@ end
 """
     LagrangeMayer
 
-a type used to specify an objective function consisting of a Lagrange and Mayer term, i.e., ``\mathbb{E}\left[ \int_{0}^T l(x(t), u(t)) \, dt + m(x(T))\right]``.
+a type used to specify an objective function consisting of a Lagrange and Mayer term, i.e., ``\mathbb{E} [ \int_{0}^T l(x(t), u(t)) \, dt + m(x(T)) ]``.
 The Lagrange and Mayer term are specified in terms of polynomial functions ``l : X \times U \to \mathbb{R}`` and ``m : X \to \mathbb{R}``, respectively.
 
 

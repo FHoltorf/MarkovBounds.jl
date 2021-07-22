@@ -167,8 +167,8 @@ end
 """
 	stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{<:APL}, d::Int, solver)
 
-returns an *upper* on the volume of the covariance ellipsoid of a vector of
-polynomial observables ``v(x)``, i.e., ``\text{det}\left(\mathbb{E} \left[v(x)v(x)^\top \right]\right)``, at steady state of the
+returns an **upper** on the volume of the covariance ellipsoid of a vector of
+polynomial observables ``v(x)``, i.e., ``\text{det}(\mathbb{E} [v(x)v(x)^\top])``, at steady state of the
 Markov process `MP`.
 The bounds are computed via an SOS program of degree `d`, hence can be tightened
 by increasing `d`. This computation requires a `solver` that can handle
@@ -215,7 +215,7 @@ stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{Num}, d::Int, solve
 					auto_scaling = false)
 
 returns an **upper** on the volume of the covariance ellipsoid of any subset `S`
-of the chemical species in the reaction network `rn`, i.e., ``\text{det}\left(\mathbb{E}\left[SS^\top \right]\right)``,
+of the chemical species in the reaction network `rn`, i.e., ``\text{det}(\mathbb{E}[SS^\top ])``,
 at steady state of the associated jump process. The reaction network is assumed
 to have the deterministic initial state `S0` (all species must be included here!).
 The bounds are computed via an SOS program of degree `d`, hence can be tightened

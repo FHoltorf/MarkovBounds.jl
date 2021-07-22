@@ -3,7 +3,7 @@ export transient_polynomial, transient_mean, transient_variance, transient_covar
 """
 	transient_pop(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
-returns SOS program of degree `d` for computing a **lower** bound on ``\mathbb{E}\left[v(x(T))\right]``
+returns SOS program of degree `d` for computing a **lower** bound on ``\mathbb{E}[v(x(T))]``
 where ``v`` is a polynomial and ``x(T)`` the state of the Markov process `MP` at time ``T``.
 μ0 encodes the distribution of the initial state of the process in terms of its moments;
 specifically, it maps monomials to the respective moments of the initial distribution.
@@ -54,7 +54,7 @@ end
 """
 	transient_polynomial(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
-returns a **lower** bound on ``\mathbb{E}\left[v(x(T))\right]`` where ``v`` is a polynomial and ``x(T)`` the state
+returns a **lower** bound on ``\mathbb{E}[v(x(T))]`` where ``v`` is a polynomial and ``x(T)`` the state
 of the Markov process `MP` at time ``T``. `μ0` encodes the
 distribution of the initial state of the process in terms of its moments; specifically,
 it maps monomials to the respective moments of the initial distribution.
@@ -81,7 +81,7 @@ end
 """
 	transient_mean(MP::MarkovProcess, μ0::Dict, x::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
-returns a **lower** and **upper** bound on ``\mathbb{E}\left[v(x(T))\right]`` where ``v`` is a polynomial and ``x(T)`` the state
+returns a **lower** and **upper** bound on ``\mathbb{E}[v(x(T))]`` where ``v`` is a polynomial and ``x(T)`` the state
 of the Markov process `MP` at time ``T``. `μ0` encodes the
 distribution of the initial state of the process in terms of its moments; specifically,
 it maps monomials to the respective moments of the initial distribution.
@@ -135,7 +135,7 @@ end
 """
 	transient_variance(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
-returns an **upper** bound on ``\mathbb{E}\left[v(x(T))^2\right] - \mathbb{E}\left[v(x(T))\right]^2`` where ``v`` is a polynomial
+returns an **upper** bound on ``\mathbb{E}[v(x(T))^2] - \mathbb{E}[v(x(T))]^2`` where ``v`` is a polynomial
 and ``x(T)`` the state of the Markov process `MP` at time ``T``.
 """
 function transient_variance(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
@@ -209,7 +209,7 @@ end
 """
 	transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{APL}, d::Int, trange::AbstractVector{<:Real}, solver)
 
-returns an **upper** bound on the volume of the covariance ellipsoid ``\text{det}\left(\mathbb{E}\left[v(x(T))v(x(T))^\top\right]\right)``,
+returns an **upper** bound on the volume of the covariance ellipsoid ``\text{det}(\mathbb{E}[v(x(T))v(x(T))^\top])``,
 where ``v`` is a polynomial and ``x(T)`` the state of the Markov process `MP` at time ``T``.
 """
 function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, p::Vector{<:APL}, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
