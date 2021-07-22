@@ -1,7 +1,7 @@
 # [Background on Moment Bounding Schemes](@id background)
 
-## Jump-Diffusion Processes
-A jump-diffusion process is dynamical system combining a deterministic evolution of the system state, called drift, with a stochastic component modeling stochastic vibrations, called diffusion, and another stochastic component modeling discrete changes, called jumps. The evolution of the process state ``x_t`` over time ``t`` through its state space ``X \subset \mathbb{R}^n`` is governed by the following stochastic differential equation
+## Polynomial Jump-Diffusion Processes
+A jump-diffusion process is dynamical system combining a deterministic evolution of the system state, called drift, with a stochastic vibrations driven by a Brownian Motion, called diffusion, and another stochastic contribution modeling discrete changes driven by Poisson counters, called jumps. The evolution of the process state ``x_t`` over time ``t`` through its state space ``X \subset \mathbb{R}^n`` is governed by the following stochastic differential equation
 ```math
     dx_t = f(x_t) \, dt + g(x_t) \, dW_t + \sum_{i=1}^{n_R} h(x_t) \, dN_{a_i(x_t)}
 ```
@@ -25,7 +25,7 @@ The core idea behind moment bounding schemes is rather simple. But to explain it
 ```
 The key insight underpinning all moment bounding schemes now is that a suitable choice of "necessary consistency conditions" turns the above "pseudo" optimization problem into a convex optimization problem known as generalized moment problem. The practical value of this observations lies in the fact that strong convex relaxations of these generalized moment problems are easily constructed and they can be readily solved with off-the-shelve semidefinite programming (SDP) solvers such as Mosek, SeDuMi or SDPT3. 
 
-But what are these "necessary consistency conditions"? We won't answer this question in detail here but provide some examples and intuition for their nature. The above mentioned consistency conditions can be loosely classified as a) reflecting the dynamics of the underlying process and b) the support of its distribution. Conditions of type a) are affine relations that the moments of process have to satisfy. To derive these conditions, note that the (extended) infinitesimal generator
+But what are these "necessary consistency conditions"? We won't answer this question in detail here but provide some examples and intuition for their nature. The above mentioned consistency conditions can be loosely classified as a) reflecting the dynamics of the underlying process and b) the support of its distribution. Conditions of type a) are affine relations that the moments of process have to satisfy. To derive these conditions, note that the (extended) infinitesimal generator of the process
 ```math
     \begin{aligned}
         \mathcal{A} : w(t,z) \mapsto &\lim_{h\to 0^+} \frac{\mathbb{E_z[w(t + h,x(t + h))]} - w(t,z)}{h} \\
@@ -72,9 +72,9 @@ For more details and technicalities on moment bounding schemes, please consult t
 
 [6] Sakurai, Yuta, and Yutaka Hori. "Optimization-based synthesis of stochastic biocircuits with statistical specifications." Journal of The Royal Society Interface 15.138 (2018): 20170709.
 
-[7] Ghusinga, Khem Raj, et al. "Exact lower and upper bounds on stationary moments in stochastic biochemical systems." Physical biology 14.4 (2017): 04LT01
+[7] Sakurai, Yuta, and Yutaka Hori. "A convex approach to steady state moment analysis for stochastic chemical reactions." 2017 IEEE 56th Annual Conference on Decision and Control (CDC). IEEE, 2017.
 
-[8] Sakurai, Yuta, and Yutaka Hori. "A convex approach to steady state moment analysis for stochastic chemical reactions." 2017 IEEE 56th Annual Conference on Decision and Control (CDC). IEEE, 2017.
+[8] Ghusinga, Khem Raj, et al. "Exact lower and upper bounds on stationary moments in stochastic biochemical systems." Physical biology 14.4 (2017): 04LT01
 
 [9] Kuntz, Juan, et al. "Bounding stationary averages of polynomial diffusions via semidefinite programming." SIAM Journal on Scientific Computing 38.6 (2016): A3891-A3920.
 

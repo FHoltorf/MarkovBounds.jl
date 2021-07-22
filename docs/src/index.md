@@ -4,8 +4,6 @@
 
 ![program structure](images\programstructure.PNG)
 
-
-
 ## When should you consider using moment bounding schemes?
 Moment bounding schemes are limited by the capabilities of large-scale semidefinite programming. Given the current state-of-the-art, moment bounding schemes are practically limited to stochastic processes of low to medium dimensionality (< 10 states). Moreover, MarkovBounds.jl currently *only* supports processes in which the data can be fully characterized in terms of *polynomials* (see the [Background](@ref background) section for details). 
 
