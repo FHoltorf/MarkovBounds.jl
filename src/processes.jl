@@ -207,16 +207,6 @@ end
 """
     LagrangeMayer
 
-a type used to specify an objective function consisting of a Lagrange and Mayer term, i.e., ``\mathbb{E} [ \int_{0}^T l(x(t), u(t)) \, dt + m(x(T)) ]``.
-The Lagrange and Mayer term are specified in terms of polynomial functions ``l : X \times U \to \mathbb{R}`` and ``m : X \to \mathbb{R}``, respectively.
-
-
-Fields: 
-* `l` - `AbstractPolynomialLike` determining the Lagrange term
-* `m` - `AbstractPolynomialLike` determining the Mayer term
-
-If only a Lagrange or Mayer term is neede for specification of the objective function, one can make use of the functions
-`Lagrange(l::AbstractPolynomialLike)` and `Mayer(m::AbstractPolynomialLike)` for more convenient model specification.
 """
 mutable struct LagrangeMayer
     l::APL
