@@ -164,7 +164,7 @@ function stationary_variance(rn::ReactionSystem, S, d::Int, solver,
 	return stationary_variance(RP.JumpProcess, RP.species_to_state[S], d, solver)
 end
 
-"""
+@doc raw"""
 	stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{<:APL}, d::Int, solver)
 
 returns an **upper** on the volume of the covariance ellipsoid of a vector of
@@ -209,7 +209,7 @@ stationary_covariance_ellipsoid(RP::ReactionProcess, v::Vector, d::Int, solver, 
 stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{Num}, d::Int, solver, P::Partition = trivial_partition(MP.X)) =
 								stationary_variance(MP, polynomialize_expr(v, MP.poly_vars), d, solver, P)
 
-"""
+@doc raw"""
 	stationary_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, solver,
 					scales = Dict(s => 1 for s in species(rn));
 					auto_scaling = false)

@@ -204,7 +204,7 @@ mutable struct TerminalSetProbability
     X::BasicSemialgebraicSet
 end
 
-"""
+@doc raw"""
     LagrangeMayer
 
 """
@@ -220,6 +220,7 @@ mutable struct ChanceConstraint
     X::BasicSemialgebraicSet
     α::Real # confidence level
 end
+
 
 inf_generator(MP::JumpProcess, w::Polynomial) = sum(MP.a[i]*(subs(w, MP.x => MP.h[i]) - w) for i in 1:length(MP.a))
 inf_generator(MP::ReactionProcess, w::Polynomial) = inf_generator(MP.JumpProcess,w)

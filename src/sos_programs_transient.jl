@@ -1,6 +1,6 @@
 export transient_polynomial, transient_mean, transient_variance, transient_covariance_ellipsoid
 
-"""
+@doc raw"""
 	transient_pop(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
 returns SOS program of degree `d` for computing a **lower** bound on ``\mathbb{E}[v(x(T))]``
@@ -51,7 +51,7 @@ function transient_pop(MP::MarkovProcess, μ0::Dict, p::Num, d::Int,
 	return transient_pop(MP, μ0, polynomialize_expr(p, MP.poly_vars), d, trange, solver, P)
 end
 
-"""
+@doc raw"""
 	transient_polynomial(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
 returns a **lower** bound on ``\mathbb{E}[v(x(T))]`` where ``v`` is a polynomial and ``x(T)`` the state
@@ -78,7 +78,7 @@ function transient_polynomial(MP::MarkovProcess, μ0::Dict, p::Num, d::Int, tran
 	return transient_polynomial(MP, μ0, polynomialize_expr(p, MP.poly_vars), d, trange, solver, P)
 end
 
-"""
+@doc raw"""
 	transient_mean(MP::MarkovProcess, μ0::Dict, x::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
 returns a **lower** and **upper** bound on ``\mathbb{E}[v(x(T))]`` where ``v`` is a polynomial and ``x(T)`` the state
@@ -132,7 +132,7 @@ function transient_mean(rn::ReactionSystem, S0::Dict, S, d::Int, trange::Abstrac
 end
 
 
-"""
+@doc raw"""
 	transient_variance(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
 returns an **upper** bound on ``\mathbb{E}[v(x(T))^2] - \mathbb{E}[v(x(T))]^2`` where ``v`` is a polynomial
@@ -206,7 +206,7 @@ function transient_variance(rn::ReactionSystem, S0::Dict, S, d::Int, trange::Abs
  	return transient_variance(RP.JumpProcess, μ0, RP.species_to_state[S], d, trange, solver)
 end
 
-"""
+@doc raw"""
 	transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{APL}, d::Int, trange::AbstractVector{<:Real}, solver)
 
 returns an **upper** bound on the volume of the covariance ellipsoid ``\text{det}(\mathbb{E}[v(x(T))v(x(T))^\top])``,
