@@ -4,11 +4,11 @@ export transient_polynomial, transient_mean, transient_variance, transient_covar
 	transient_pop(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
 returns SOS program of degree `d` for computing a **lower** bound on ``\mathbb{E}[v(x(T))]``
-where ``v`` is a polynomial and ``x(T)`` the state of the Markov process `MP` at time ``T``.
+where ``v`` is a polynomial and ``x(T)`` the state of the Markov process `MP` at time `T = trange[end]`.
 μ0 encodes the distribution of the initial state of the process in terms of its moments;
 specifically, it maps monomials to the respective moments of the initial distribution.
 `trange` is an **ordered** collection of time points used to discretize the time
-horizon ``[0,T]``, i.e., `trange[end] = T`. Populating `trange` and increasing `d` has a
+horizon ``[0,T]``, i.e., `T = trange[end]`. Populating `trange` and increasing `d` has a
 tightening effect on the bound furnished by the assembled SOS program.
 """
 function transient_pop(MP::MarkovProcess, μ0::Dict, p::APL, d::Int,
@@ -55,11 +55,11 @@ end
 	transient_polynomial(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
 returns a **lower** bound on ``\mathbb{E}[v(x(T))]`` where ``v`` is a polynomial and ``x(T)`` the state
-of the Markov process `MP` at time ``T``. `μ0` encodes the
+of the Markov process `MP` at time `T = trange[end]`. `μ0` encodes the
 distribution of the initial state of the process in terms of its moments; specifically,
 it maps monomials to the respective moments of the initial distribution.
 `trange` is an **ordered** collection of time points used to discretize the time
-horizon ``[0,T]``, i.e., `trange[end] = T`. Populating `trange` and increasing `d` improves
+horizon ``[0,T]``, i.e., `T = trange[end]`. Populating `trange` and increasing `d` improves
 the computed bound.
 """
 function transient_polynomial(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
@@ -82,11 +82,11 @@ end
 	transient_mean(MP::MarkovProcess, μ0::Dict, x::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
 returns a **lower** and **upper** bound on ``\mathbb{E}[v(x(T))]`` where ``v`` is a polynomial and ``x(T)`` the state
-of the Markov process `MP` at time ``T``. `μ0` encodes the
+of the Markov process `MP` at time `T = trange[end]`. `μ0` encodes the
 distribution of the initial state of the process in terms of its moments; specifically,
 it maps monomials to the respective moments of the initial distribution.
 trange is an **ordered** collection of time points used to discretize the time
-horizon ``[0,T]``, i.e., `trange[end] = T`. Populating `trange` and increasing `d` improves
+horizon ``[0,T]``, i.e., `T = trange[end]`. Populating `trange` and increasing `d` improves
 the computed bounds.
 """
 function transient_mean(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
@@ -111,10 +111,10 @@ end
 			auto_scaling = false)
 
 returns a **lower** and **upper** bound on the mean of the molecular count of species
-`S` in reaction network `rn` at time ``T``. `S0` refers to the **deterministic** initial state
+`S` in reaction network `rn` at time `T = trange[end]`. `S0` refers to the **deterministic** initial state
 of the reaction system (including all species!).
 `trange` is an **ordered** collection of time points used to discretize the time
-horizon ``[0,T]``, i.e., `trange[end] = T`. Populating trange and increasing `d` improves
+horizon ``[0,T]``, i.e., `T = trange[end]`. Populating trange and increasing `d` improves
 the computed bounds.
 
 For numerical stability, it is recommended to provide scales of the expected
@@ -136,7 +136,7 @@ end
 	transient_variance(MP::MarkovProcess, μ0::Dict, v::APL, d::Int, trange::AbstractVector{<:Real}, solver)
 
 returns an **upper** bound on ``\mathbb{E}[v(x(T))^2] - \mathbb{E}[v(x(T))]^2`` where ``v`` is a polynomial
-and ``x(T)`` the state of the Markov process `MP` at time ``T``.
+and ``x(T)`` the state of the Markov process `MP` at time `T = trange[end]`.
 """
 function transient_variance(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
 	if trange[1] == 0
@@ -186,10 +186,10 @@ end
 				auto_scaling = false)
 
 returns an **upper** bound on the variance of species `S` in the reaction network `rn`
-at time ``T``. `S0` refers to the **deterministic** initial state
+at time `T = trange[end]`. `S0` refers to the **deterministic** initial state
 of the reaction system (including all species!).
 `trange` is an **ordered** collection of time points used to discretize the time
-horizon ``[0,T]``, i.e., `trange[end] = T`. Populating `trange` and increasing `d` improves
+horizon ``[0,T]``, i.e., `T = trange[end]`. Populating `trange` and increasing `d` improves
 the computed bounds.
 
 For numerical stability, it is recommended to provide scales of the expected
@@ -209,8 +209,8 @@ end
 @doc raw"""
 	transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{APL}, d::Int, trange::AbstractVector{<:Real}, solver)
 
-returns an **upper** bound on the volume of the covariance ellipsoid ``\text{det}(\mathbb{E}[v(x(T))v(x(T))^\top])``,
-where ``v`` is a polynomial and ``x(T)`` the state of the Markov process `MP` at time ``T``.
+returns an **upper** bound on the volume of the covariance ellipsoid ``\text{det}(\mathbb{E}[v(x(T))v(x(T))^\top] - \mathbb{E}[v(x(T))] \mathbb{E}[v(x(T))]^\top)``,
+where ``v`` is a polynomial and ``x(T)`` the state of the Markov process `MP` at time `T = trange[end]`.
 """
 function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, p::Vector{<:APL}, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
 	if trange[1] == 0
@@ -268,10 +268,10 @@ end
 							auto_scaling = false)
 
 returns an **upper** bound on the volume of the covariance ellipsoid associated with any
-collection of chemical species in the reaction network `rn` at time ``T``.
+collection of chemical species in the reaction network `rn` at time `T = trange[end]`.
 S0 refers to the **deterministic** initial state of the reaction system
 (including all species!). `trange` is an **ordered** collection of time points used to discretize the time
-horizon ``[0,T]``, i.e., `trange[end] = T`. Populating `trange` and increasing `d` improves
+horizon ``[0,T]``, i.e., `T = trange[end]`. Populating `trange` and increasing `d` improves
 the computed bounds.
 
 For numerical stability, it is recommended to provide scales of the expected
