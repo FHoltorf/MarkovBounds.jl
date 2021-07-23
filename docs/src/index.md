@@ -41,7 +41,7 @@ Note that this includes means and any moment as special case, when choosing ``v(
  ```math 
  \mathbb{E}\left[v(x(t))\right]
  ``` 
-* Stationary variances of polynomial observables ``v``: 
+* Transient variances of polynomial observables ``v``: 
 ```math
 \mathbb{E}\left[v(x(t))^2\right] - \mathbb{E}\left[v(x(t))\right]^2
 ```
