@@ -24,7 +24,7 @@ Let ``x(t) \in \mathbb{R}^n`` be the state of the jump-diffusion process under i
 ```math 
     \lim_{t \to \infty} \mathbb{E}\left[v(x(t))\right]
 ``` 
-Note that this includes means and any moment as special case, when choosing ``v(z) = z_k`` or ``v(z) = \prod_{k=1}^n z_k^{i_k}`` for some ``i \in \mathbb{N}``. 
+Note that this includes for example the mean of state ``x_k`` or more generally any moment corresponding to the multi-index ``i \in \mathbb{N}_0^n`` as special cases by choosing ``v(z) = z_k`` or ``v(z) = \prod_{k=1}^n z_k^{i_k}``, respectively. 
 * Stationary variances of polynomial observables ``v``: 
 ```math 
     \lim_{t \to \infty} \mathbb{E}\left[v(x(t))^2\right] - \mathbb{E}\left[v(x(t))\right]^2
@@ -38,9 +38,9 @@ Note that this includes means and any moment as special case, when choosing ``v(
 \lim_{t \to \infty} \mathbb{P}\left[ x(t) \in X \right] 
 ```
 * Transient means of polynomial observables ``v``:
- ```math 
- \mathbb{E}\left[v(x(t))\right]
- ``` 
+```math 
+\mathbb{E}\left[v(x(t))\right]
+``` 
 * Transient variances of polynomial observables ``v``: 
 ```math
 \mathbb{E}\left[v(x(t))^2\right] - \mathbb{E}\left[v(x(t))\right]^2
