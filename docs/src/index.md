@@ -20,44 +20,44 @@ Moment bounding schemes extend naturally to the application of (stochastic) opti
 As the name suggests, moment bounding schemes are primarily used to generate bounds on moments of distributions that describe jump-diffusion processes. That said, statistics that are not directly moments, however, are closely related to them such as variances or the volume of a confidence ellipsoid can be bounded as well. Moreover, by carefully choosing the distribution of which the moments are bounded, we can also bound quantities that do not directly stand out to be related to moments. The list below summarizes all quantities that can be bounded using MarkovBounds.jl.
 
 Let ``x(t) \in \mathbb{R}^n`` be the state of the jump-diffusion process under investigation at time ``t > 0``. 
-* Stationary means of polynomial observables ``v``: 
+* Stationary mean of polynomial observables ``v``: 
 ```math 
     \lim_{t \to \infty} \mathbb{E}\left[v(x(t))\right]
 ``` 
 Note that this includes for example the mean of state ``x_k`` or more generally any moment corresponding to the multi-index ``i \in \mathbb{N}_0^n`` as special cases by choosing ``v(z) = z_k`` or ``v(z) = \prod_{k=1}^n z_k^{i_k}``, respectively. 
-* Stationary variances of polynomial observables ``v``: 
+* Stationary variance of polynomial observables ``v``: 
 ```math 
     \lim_{t \to \infty} \mathbb{E}\left[v(x(t))^2\right] - \mathbb{E}\left[v(x(t))\right]^2
 ```
-* Volume of stationary confidence ellipsoids of vector-valued polynomial observables ``\mathbf{v}``: 
+* Volume of stationary confidence ellipsoid of vector-valued polynomial observables ``\mathbf{v}``: 
 ```math 
-\lim_{t \to \infty} \text{det}\left(\mathbb{E}\left[\mathbf{v}(x(t)) \mathbf{v}(x(t))^\top \right] - \mathbb{E}\left[\mathbf{v}(x(t))\right]\mathbb{E}\left[\mathbf{v}(x(t))\right]^\top\right)
+    \lim_{t \to \infty} \text{det}\left(\mathbb{E}\left[\mathbf{v}(x(t)) \mathbf{v}(x(t))^\top \right] - \mathbb{E}\left[\mathbf{v}(x(t))\right]\mathbb{E}\left[\mathbf{v}(x(t))\right]^\top\right)
 ```
 * Probability of observing the stationary process in basic semialgebraic set ``X``: 
 ```math 
-\lim_{t \to \infty} \mathbb{P}\left[ x(t) \in X \right] 
+    \lim_{t \to \infty} \mathbb{P}\left[ x(t) \in X \right] 
 ```
-* Transient means of polynomial observables ``v``:
+* Transient mean of polynomial observables ``v``:
 ```math 
-\mathbb{E}\left[v(x(t))\right]
+    \mathbb{E}\left[ v(x(t)) \right]
 ``` 
-* Transient variances of polynomial observables ``v``: 
+* Transient variance of polynomial observables ``v``: 
 ```math
-\mathbb{E}\left[v(x(t))^2\right] - \mathbb{E}\left[v(x(t))\right]^2
+    \mathbb{E}\left[v(x(t))^2\right] - \mathbb{E}\left[v(x(t))\right]^2
 ```
-* Volume of stationary confidence ellipsoids of vector-valued polynomial observables ``\mathbf{v}``: 
+* Volume of stationary confidence ellipsoid of vector-valued polynomial observables ``\mathbf{v}``: 
 ```math
-\text{det}\left(\mathbb{E}\left[\mathbf{v}(x(t))\mathbf{v}(x(t))^\top \right] - \mathbb{E}\left[\mathbf{v}(x(t))\right]\mathbb{E}\left[\mathbf{v}(x(t))\right]^\top\right)
+    \text{det}\left(\mathbb{E}\left[\mathbf{v}(x(t))\mathbf{v}(x(t))^\top \right] - \mathbb{E}\left[\mathbf{v}(x(t))\right]\mathbb{E}\left[\mathbf{v}(x(t))\right]^\top\right)
 ```
 * Exit probability from basic semialgebraic set ``X \subset \mathbb{R}^n``: 
 ```math 
-\mathbb{P}\left[ t_{exit} < t \right] \text{ where } t_{exit} = \inf_{0 \leq s \leq t} \{ s : x(s) \notin X \}
+    \mathbb{P}\left[ t_{exit} < t \right] \text{ where } t_{exit} = \inf_{0 \leq s \leq t} \{ s : x(s) \notin X \}
 ```
 * Probability of observing the process in basic semialgebraic set ``X \subset \mathbb{R}^n``: 
 ```math
-\mathbb{P}\left[ x(t) \in X \right]
+    \mathbb{P}\left[ x(t) \in X \right]
 ```
-* Expected time averages of polynomial observable ``v``: 
+* Expected time average of polynomial observable ``v``: 
 ```math
 \mathbb{E}\left[ \int_{0}^t v(x(s)) \, ds \right]
 ``` 
