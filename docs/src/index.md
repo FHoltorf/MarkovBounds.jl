@@ -19,17 +19,48 @@ Moment bounding schemes extend naturally to the application of (stochastic) opti
 ## Which statistics can you bound?
 As the name suggests, moment bounding schemes are primarily used to generate bounds on moments of distributions that describe jump-diffusion processes. That said, statistics that are not directly moments, however, are closely related to them such as variances or the volume of a confidence ellipsoid can be bounded as well. Moreover, by carefully choosing the distribution of which the moments are bounded, we can also bound quantities that do not directly stand out to be related to moments. The list below summarizes all quantities that can be bounded using MarkovBounds.jl.
 
-Let ``x(t)`` be the state of the jump-diffusion process under investigation at time ``t``. 
-* Stationary means of polynomial observables ``v``: ``\lim_{t \to \infty} \mathbb{E}\left[v(x(t))\right]`` (Note that this includes means and any moment as special case)
-* Stationary variances of polynomial observables ``v``: ``\lim_{t \to \infty} \mathbb{E}\left[v(x(t))^2\right] - \mathbb{E}\left[v(x(t))\right]^2``
-* Volume of stationary confidence ellipsoids of vector-valued polynomial observables ``\mathbf{v}``: ``\lim_{t \to \infty} \text{det}\left(\mathbb{E}\left[\mathbf{v}(x(t)) \mathbf{v}(x(t))^\top \right] - \mathbb{E}\left[\mathbf{v}(x(t))\right]\mathbb{E}\left[\mathbf{v}(x(t))\right]^\top\right)``
-* Probability of observing the stationary process in basic semialgebraic set ``X``: ``\lim_{t \to \infty} \mathbb{P}\left[ x(t) \in X \right]``
-* Transient means of polynomial observables ``v``: ``\mathbb{E}\left[v(x(t))\right]`` for some ``t > 0``
-* Stationary variances of polynomial observables ``v``: ``\mathbb{E}\left[v(x(t))^2\right] - \mathbb{E}\left[v(x(t))\right]^2`` for some ``t > 0``
-* Volume of stationary confidence ellipsoids of vector-valued polynomial observables ``\mathbf{v}``: ``\text{det}\left(\mathbb{E}\left[\mathbf{v}(x(t))\mathbf{v}(x(t))^\top \right] - \mathbb{E}\left[\mathbf{v}(x(t))\right]\mathbb{E}\left[\mathbf{v}(x(t))\right]^\top\right)`` for some ``t``
-* Exit probability from basic semialgebraic set ``X``: ``\mathbb{P}\left[ \inf_{0 \leq s \leq t} \{ s : x(s) \notin X \} < t \right]`` for some ``t > 0``
-* Probability of observing the process in basic semialgebraic set ``X``: ``\mathbb{P}\left[ x(t) \in X \right]`` for some ``t > 0``.
-* Expected time averages of polynomial observable ``v``: ``\mathbb{E}\left[ \int_{0}^t v(x(s)) \, ds \right]`` for some ``t > 0``. 
+Let ``x(t) \in \mathbb{R}^n`` be the state of the jump-diffusion process under investigation at time ``t > 0``. 
+* Stationary means of polynomial observables ``v``: 
+```math 
+    \lim_{t \to \infty} \mathbb{E}\left[v(x(t))\right]
+``` 
+Note that this includes means and any moment as special case, when choosing ``v(z) = z_k`` or ``v(z) = \prod_{k=1}^n z_k^{i_k}`` for some ``i \in \mathbb{N}``. 
+* Stationary variances of polynomial observables ``v``: 
+```math 
+    \lim_{t \to \infty} \mathbb{E}\left[v(x(t))^2\right] - \mathbb{E}\left[v(x(t))\right]^2
+```
+* Volume of stationary confidence ellipsoids of vector-valued polynomial observables ``\mathbf{v}``: 
+```math 
+\lim_{t \to \infty} \text{det}\left(\mathbb{E}\left[\mathbf{v}(x(t)) \mathbf{v}(x(t))^\top \right] - \mathbb{E}\left[\mathbf{v}(x(t))\right]\mathbb{E}\left[\mathbf{v}(x(t))\right]^\top\right)
+```
+* Probability of observing the stationary process in basic semialgebraic set ``X``: 
+```math 
+\lim_{t \to \infty} \mathbb{P}\left[ x(t) \in X \right] 
+```
+* Transient means of polynomial observables ``v``:
+ ```math 
+ \mathbb{E}\left[v(x(t))\right]
+ ``` 
+* Stationary variances of polynomial observables ``v``: 
+```math
+\mathbb{E}\left[v(x(t))^2\right] - \mathbb{E}\left[v(x(t))\right]^2
+```
+* Volume of stationary confidence ellipsoids of vector-valued polynomial observables ``\mathbf{v}``: 
+```math
+\text{det}\left(\mathbb{E}\left[\mathbf{v}(x(t))\mathbf{v}(x(t))^\top \right] - \mathbb{E}\left[\mathbf{v}(x(t))\right]\mathbb{E}\left[\mathbf{v}(x(t))\right]^\top\right)
+```
+* Exit probability from basic semialgebraic set ``X \subset \mathbb{R}^n``: 
+```math 
+\mathbb{P}\left[ t_{exit} < t \right] \text{ where } t_{exit} = \inf_{0 \leq s \leq t} \{ s : x(s) \notin X \}
+```
+* Probability of observing the process in basic semialgebraic set ``X \subset \mathbb{R}^n``: 
+```math
+\mathbb{P}\left[ x(t) \in X \right]
+```
+* Expected time averages of polynomial observable ``v``: 
+```math
+\mathbb{E}\left[ \int_{0}^t v(x(s)) \, ds \right]
+``` 
 
 ## How to install MarkovBounds.jl?
 If you want to give MarkovBounds.jl a try, you can install it via Julia's package manager
