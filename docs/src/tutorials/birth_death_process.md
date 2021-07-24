@@ -1,4 +1,4 @@
-## Analysis of a Birth-Death Processes
+# Analysis of a Birth-Death Processes
 In this example we wish to study the statistics of the simple nonlinear birth-death process
 
     ∅ → A

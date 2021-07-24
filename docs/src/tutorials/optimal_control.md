@@ -1,4 +1,4 @@
-## Optimal Population Control of Noisy Lotka-Volterra System
+# Optimal Population Control of Noisy Lotka-Volterra System
 
 The same techniques used for studying the statistics of stochastic processes can be used to study different variations of stochastic optimal control problems.
 

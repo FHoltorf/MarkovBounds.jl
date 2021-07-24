@@ -1,4 +1,4 @@
-## Analysis of Cox-Ingersoll-Ross Model Modified by Jumps
+# Analysis of Cox-Ingersoll-Ross Model Modified by Jumps
 
 Beyond jump processes modeling stochastic chemical systems, a much wider range of stochastic processes admits computable bounds on stationary and transient moments and related statistics via moment bounding schemes. Generally all jump-diffusion processes of the form
 ```math
