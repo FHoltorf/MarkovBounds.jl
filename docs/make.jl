@@ -16,6 +16,9 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Background" => "background.md",
+        "Tutorials" => ["tutorials/birth_death_process.md",
+                        "tutorials/jump_diffusion_process.md",
+                        "tutorials/optimal_control.md"],
         "Functionalities" => "functionalities.md" 
     ],
 )
