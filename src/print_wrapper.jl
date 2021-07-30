@@ -17,6 +17,9 @@ Base.show(io::IO, MP::DiffusionProcess) = println(io,
   Diffusion: $(print_wo_type(MP.σ))
   State space: $(MP.X)")
 
+Base.show(io::IO, LP::LangevinProcess) = println(io,
+"Chemical Langevin Equation is analogous to following $(LP.DiffusionProcess)")
+
 Base.show(io::IO, MP::JumpDiffusionProcess) = println(io,
 "Jump-Diffusion Process
 -----------------------

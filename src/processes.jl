@@ -1,4 +1,4 @@
-export JumpProcess, ReactionProcess, DiffusionProcess, JumpDiffusionProcess, ControlProcess,
+export JumpProcess, ReactionProcess, DiffusionProcess, LangevinProcess, JumpDiffusionProcess, ControlProcess,
        MarkovProcess, LagrangeMayer, Lagrange, Mayer, ExitProbability, TerminalSetProbability,
        inf_generator, extended_inf_generator
 
@@ -108,6 +108,28 @@ end
 
 DiffusionProcess(x::PV, f::APL, σ::APL, X = FullSpace(); time::PV = PV{true}("t"), controls = PV{true}[]) =
                  DiffusionProcess([x], [f], reshape([σ],1,1), X; time=time, controls = (controls isa Vector ? controls : [controls]))
+                
+mutable struct LangevinProcess <: MarkovProcess
+    ReactionSystem::ReactionSystem
+    DiffusionProcess::DiffusionProcess
+    species_to_index::Dict
+    species_to_state::Dict
+    state_to_species::Dict
+    function LangevinProcess(rn::ReactionSystem, params = Dict())
+        specs = species(rn)
+        S = prodstoichmat(rn) - substoichmat(rn)
+        n = length(specs)
+        @polyvar(x[1:n])
+        spec2idx = Dict(specs[i] => i for i in 1:n)
+        spec2state = Dict(specs[i] => x[i] for i in 1:n)
+        state2spec = Dict(x[i] => specs[i] for i in 1:n)
+        props = polynomial.(reformat_reactions(reactions(rn), spec2idx, x, params))
+        drift = S'*props
+        diff = [sum(S[k,i]*S[k,j]*props[k] for k in eachindex(props)) for i in 1:n, j in 1:n]
+        support = intersect([@set(x[i] >= 0) for i in 1:n]...)
+        return new(rn, DiffusionProcess(x,drift,diff,support), spec2idx, spec2state, state2spec)
+    end
+end
 
 """
     JumpDiffusionProcess(x, a, h, f, σ, X = FullSpace()

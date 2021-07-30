@@ -57,6 +57,7 @@ function stationary_mean(MP::MarkovProcess, v::APL, d::Int, solver, P::Partition
 end
 
 stationary_mean(RP::ReactionProcess, S, d::Int, solver, P::Partition = trivial_partition(RP.JumpProcess.X)) = stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver, P)
+stationary_mean(LP::LangevinProcess, S, d::Int, solver, P::Partition = trivial_partition(LP.DiffusionProcess.X)) = stationary_mean(LP.DiffusionProcess, LP.species_to_state[S], d, solver, P)
 stationary_mean(MP::MarkovProcess, v::Num, d::Int, solver, P::Partition = trivial_partition(MP.X)) = stationary_mean(MP, polynomialize_expr(v, MP.poly_vars), d, solver, P)
 
 """
