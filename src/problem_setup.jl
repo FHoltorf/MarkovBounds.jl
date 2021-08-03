@@ -36,7 +36,7 @@ function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::P
                                    time_domain::AbstractSemialgebraicSet,
                                    Δt::AbstractVector, w, rhs; ρ::Real = 0)
     nT = length(Δt)
-    t = MP.time
+    t = MP.iv
     @constraint(model, [k in 1:nT], extended_inf_generator(MP, w, (k, v), P; scale = Δt[k]) - ρ*w[k, v] >= Δt[k]*rhs, domain = time_domain)
     @constraint(model, [k in 2:nT], w[k, v](t => 0) - w[k-1, v](t => 1) >= 0)
 end
@@ -46,7 +46,7 @@ function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::P
                                    time_domain::AbstractSemialgebraicSet,
                                    Δt::AbstractVector, w, rhs::APL; ρ::Real = 0)
     nT = length(Δt)
-    t = MP.time
+    t = MP.iv
     @constraint(model, [k in 1:nT], extended_inf_generator(MP, w, (k, v), P; scale = Δt[k])  - ρ*w[k, v] >= Δt[k]*rhs(MP.x => space_domain.x), domain = time_domain)
     @constraint(model, [k in 2:nT], w[k, v](t => 0) - w[k-1,v](t => 1) >= 0)
 end
@@ -57,7 +57,7 @@ function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::P
                                    Δt::AbstractVector, w, rhs; ρ::Real = 0)
     nT = length(Δt)
     XT = intersect(space_domain,time_domain)
-    t = MP.time
+    t = MP.iv
     @constraint(model, [k in 1:nT], extended_inf_generator(MP, w[k, v]; scale = Δt[k]) - ρ*w[k, v] >= Δt[k]*rhs, domain = XT)
     @constraint(model, [k in 2:nT], subs(w[k, v], t => 0) - subs(w[k-1, v], t => 1) >= 0, domain = space_domain)
 end
@@ -67,7 +67,7 @@ function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::P
                                    time_domain::AbstractSemialgebraicSet,
                                    Δt::AbstractVector, w, rhs; ρ::Real = 0)
     nT = length(Δt)
-    t = MP.time
+    t = MP.iv
     for X in space_domain
         XT = intersect(X,time_domain)
         @constraint(model, [k in 1:nT], extended_inf_generator(MP, w[k, v]; scale = Δt[k]) - ρ*w[k, v] >= Δt[k]*rhs, domain = XT)
@@ -76,20 +76,20 @@ function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::P
 end
 
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Singleton, w, rhs::Real)
-    @constraint(model, subs(w, MP.time => 1) <= rhs)
+    @constraint(model, subs(w, MP.iv => 1) <= rhs)
 end
 
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Singleton, w, rhs::APL)
-    @constraint(model, subs(w, MP.time => 1) <= rhs(MP.x => space_domain.x))
+    @constraint(model, subs(w, MP.iv => 1) <= rhs(MP.x => space_domain.x))
 end
 
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::AbstractSemialgebraicSet, w, rhs)
-    @constraint(model, subs(w, MP.time => 1) <= rhs, domain = space_domain)
+    @constraint(model, subs(w, MP.iv => 1) <= rhs, domain = space_domain)
 end
 
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Vector{<:AbstractSemialgebraicSet}, w, rhs)
     for X in space_domain
-        @constraint(model, subs(w, MP.time => 1) <= rhs, domain = X)
+        @constraint(model, subs(w, MP.iv => 1) <= rhs, domain = X)
     end
 end
 
@@ -109,7 +109,7 @@ end
 
 function add_path_chance_constraint!(model::Model, MP::MarkovProcess, PC::ChanceConstraint, time_domain, Δt::AbstractVector, w_pc, s_pc)
 	∂X = ∂(PC.X)
-	t = MP.time
+	t = MP.iv
 	nT = length(Δt)
 	@constraint(model, [i in 1:nT], extended_inf_generator(MP, w_pc[i]; scale = Δt[i]) >= 0, domain = intersect(PC.X, time_domain))
 	@constraint(model, [i in 2:nT], subs(w_pc[i], t => 0) - subs(w_pc[i-1], t => 1) >= 0, domain = PC.X)
@@ -121,9 +121,9 @@ end
 function add_boundary_constraints!(model::Model, MP::MarkovProcess, nT::Int, v::Int, P::Partition, space_domain::AbstractSemialgebraicSet,
 								   time_domain::AbstractSemialgebraicSet, w, X::AbstractSemialgebraicSet, ∂X::AbstractVector{<:AbstractSemialgebraicSet})
 	@constraint(model, [i in 1:nT, k in 1:length(∂X)], w[i, v] >= 0, domain = intersect(∂X[k], space_domain, T))
-	@constraint(model, - 1 - subs(w[nT, v], MP.time => 1) >= 0, domain = intersect(space_domain, X))
+	@constraint(model, - 1 - subs(w[nT, v], MP.iv => 1) >= 0, domain = intersect(space_domain, X))
 end
 
 function add_terminal_chance_constraint!(model::Model, MP::MarkovProcess, TC::ChanceConstraint, v::Int, P::Partition, space_domain::AbstractSemialgebraicSet, w, rhs)
-	@constraint(model, subs(w[nT, v], MP.time => 1) <= rhs, domain = intersect(TC.X,space_domain))
+	@constraint(model, subs(w[nT, v], MP.iv => 1) <= rhs, domain = intersect(TC.X,space_domain))
 end

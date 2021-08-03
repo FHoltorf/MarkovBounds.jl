@@ -27,7 +27,7 @@ function optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstract
 		model, w = finite_horizon_control(CP, μ0, d, trange, solver, P)
 	end
 	optimize!(model)
-	return Bound(objective_value(model), model, P, dual_poly(w, CP.MP.time, trange))
+	return Bound(objective_value(model), model, P, dual_poly(w, CP.MP.iv, trange))
 end
 
 ## Finite horizon control problems
@@ -47,7 +47,7 @@ end
 ## Lagrange Mayer
 function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
     MP = CP.MP
-    t = MP.time
+    t = MP.iv
     nT = length(trange)
     Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
     T = @set(t >= 0 && t <= 1)
@@ -97,7 +97,7 @@ end
 function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
 	nT = length(trange)
 	MP = CP.MP
-	t = MP.time
+	t = MP.iv
 	Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
 	T = @set(t >= 0 && t <= 1)
 
@@ -140,7 +140,7 @@ end
 function finite_horizon_TP(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
 	nT = length(trange)
 	MP = CP.MP
-	t = MP.time
+	t = MP.iv
 	Δt = [(i == 1 ? trange[i] : trange[i] - trange[i-1]) for i in 1:nT]
 	T = @set(t >= 0 && t <= 1)
 
@@ -197,7 +197,7 @@ end
 
 function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector, solver, P::Partition = trivial_partition(CP.MP.X))
     MP = CP.MP
-    t = MP.time
+    t = MP.iv
     nT = length(trange)
     Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
     ρ = CP.discount_factor
@@ -250,7 +250,7 @@ end
 
 function finite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, P::Partition, solver)
     MP = CP.MP
-    t = MP.time
+    t = MP.iv
     nT = length(trange)
     Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
     T = @set(t >= 0 && t <= 1)
@@ -282,7 +282,7 @@ function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange:
         trange = trange[2:end]
     end
     MP = CP.MP
-    t = MP.time
+    t = MP.iv
     nT = length(trange)
     Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
     ρ = CP.discount_factor

@@ -16,7 +16,7 @@ function transient_pop(MP::MarkovProcess, μ0::Dict, p::APL, d::Int,
     if trange[1] == 0
         trange = trange[2:end]
     end
-    t = MP.time
+    t = MP.iv
     nT = length(trange)
     Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
     T  = @set(t >= 0 && t <= 1)
@@ -65,7 +65,7 @@ the computed bound.
 function transient_polynomial(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
     model, w = transient_pop(MP, μ0, p, d, trange, solver, P)
     optimize!(model)
-    return Bound(objective_value(model), model, P, dual_poly(w, MP.time, trange))
+    return Bound(objective_value(model), model, P, dual_poly(w, MP.iv, trange))
 
 end
 
@@ -142,7 +142,7 @@ function transient_variance(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange
 	if trange[1] == 0
 		trange = trange[2:end]
 	end
-	t = MP.time
+	t = MP.iv
 	nT = length(trange)
 	Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
 	T  = @set(t >= 0 && t <= 1)
@@ -216,7 +216,7 @@ function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, p::Vector{
 	if trange[1] == 0
 		trange = trange[2:end]
 	end
-	t = MP.time
+	t = MP.iv
 	nT = length(trange)
 	Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
 	T  = @set(t >= 0 && t <= 1)

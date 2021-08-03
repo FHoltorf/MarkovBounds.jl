@@ -262,7 +262,7 @@ function value_function(CP::ControlProcess, trange, bound::Bound)
         trange = trange[2:end]
     end
     V_poly(t,x) = bound.w[get_piece(t, trange), bound.partition.get_vertex(x)]
-    V_val(t,x) = V_poly(t,x)(CP.MP.time => t, CP.MP.x => x)
+    V_val(t,x) = V_poly(t,x)(CP.MP.iv => t, CP.MP.x => x)
     return V_poly, V_val
 end
 
