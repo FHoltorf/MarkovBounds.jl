@@ -16,7 +16,7 @@ SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
-Catalyst = "6"
+Catalyst = "6, 8"
 DynamicPolynomials = "0.3"
 LightGraphs = "1"
 MetaGraphs = "0.6"
@@ -24,8 +24,6 @@ Parameters = "0.12"
 Reexport = "1"
 SumOfSquares = "0.4"
 julia = "1.6"
-#Symbolics = "1" # this breaks other packages ...need to rework
-#SymbolicUtils = "0.12"
 
 [extras]
 COSMO = "1e616198-aa4e-51ec-90a2-23f7fbd31d8d"
