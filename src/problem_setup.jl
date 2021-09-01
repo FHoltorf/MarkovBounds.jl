@@ -1,18 +1,20 @@
-function add_stationarity_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition, domain::AbstractSemialgebraicSet, w, rhs)
+function add_stationarity_constraints!(model::Model, MP::MarkovProcess, v::Int, ::Partition, domain::AbstractSemialgebraicSet, w, rhs)
     @constraint(model, inf_generator(MP, w[v]) >= rhs, domain = domain)
 end
 
-function add_stationarity_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition, domain::Vector{<:AbstractSemialgebraicSet}, w, rhs)
+function add_stationarity_constraints!(model::Model, MP::MarkovProcess, v::Int, ::Partition, domain::Vector{<:AbstractSemialgebraicSet}, w, rhs)
+    cons = []
     for X in domain
-        @constraint(model, inf_generator(MP, w[v]) >= rhs, domain = X)
+        push!(cons, @constraint(model, inf_generator(MP, w[v]) >= rhs, domain = X))
     end
+    return cons
 end
 
-function add_stationarity_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition, domain::Singleton, w, rhs::APL)
+function add_stationarity_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition, ::Singleton, w, rhs::APL)
     @constraint(model, inf_generator(MP, w, v, P) >= rhs(MP.x => props(P.graph, v)[:cell].x))
 end
 
-function add_stationarity_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition, domain::Singleton, w, rhs)
+function add_stationarity_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition, ::Singleton, w, rhs)
 	@constraint(model, inf_generator(MP, w, v, P) >= rhs)
 end
 

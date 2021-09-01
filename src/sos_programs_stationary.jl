@@ -1,4 +1,4 @@
-export stationary_polynomial, stationary_mean, stationary_variance, stationary_covariance_ellipsoid
+export stationary_polynomial, stationary_mean, stationary_variance, stationary_covariance_ellipsoid, max_entropy_measure
 
 """
 	stationary_pop(MP::MarkovProcess, v::APL, d::Int, solver)
@@ -258,9 +258,14 @@ returns **lower** and **upper** bounds on the probability mass associated with t
 monotonically with increasing order. solver refers to the optimizer used to solve
 the semidefinite programs which optimal values furnish the bounds. This is the
 weakest formulation that can be used to compute bounds on the probabiltiy mass
-associated with a Basic semialgebraic set. For sensible results the set `X` must have
-a non-empty interior. In order to improve the bounds the user must supply a carefully
-defined partition of the state space.
+associated with a Basic semialgebraic set. For sensible results the set `X` should have non-
+empty interior. In order to improve the bounds the user should supply a carefully defined 
+partition of the state space. In that case it is most sensible to choose `X` as a subset of the element 
+of said partition. Then, one should call
+
+    stationary_probability_mass(MP::MarkovProcess, v::Int, order::Int, solver,
+                                 P::Partition)
+where `v` refers to the vertex of the partition graph that corresponds to the set `X`. 
 """
 function stationary_probability_mass(MP::MarkovProcess, X::BasicSemialgebraicSet, d::Int, solver)
 	P = split_state_space(MP, X)
@@ -283,10 +288,10 @@ function stationary_indicator(MP::MarkovProcess, v_target::Int, order::Int, P::P
     w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                    @variable(model) :
                    @variable(model, [1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
-
+    cons = Dict()
     for v in vertices(P.graph)
         flag = (v_target == v)
-        add_stationarity_constraints!(model, MP, v, P, props(P.graph, v)[:cell], w, s + flag*sense)
+        cons[v] = add_stationarity_constraints!(model, MP, v, P, props(P.graph, v)[:cell], w, s + flag*sense)
     end
 
     for e in edges(P.graph)
@@ -295,4 +300,121 @@ function stationary_indicator(MP::MarkovProcess, v_target::Int, order::Int, P::P
 
     @objective(model, Max, s)
     return model, w
+end
+
+"""
+    approximate_stationary_measure(MP::MarkovProcess, v::APL, order::Int, solver, P::Partition;
+                                   side_infos::BasicSemialgebraicSet)
+
+returns approximate values for the stationary measure on the partition `P`. 
+`v` is a polynomial observable whose expectation is minimized when determining the approximation. 
+The choice of `v` shall be understood as means to regularize the problem. 
+"""
+function approximate_stationary_measure(MP::MarkovProcess, v::APL, order::Int, solver, P::Partition,
+                                        side_infos = FullSpace())
+    model = SOSModel(solver)
+    @variable(model, s)
+    w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
+                    @variable(model) :
+                    @variable(model, [1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
+    ineqs = inequalities(side_infos)
+    eqs = equalities(side_infos)
+    if !isempty(ineqs)
+        @variable(model, μ[ineqs] >= 0)
+        ineq_slack = sum(μ[ineq]*(ineq - ineq.a[end]) for ineq in ineqs)
+        ineq_obj =  sum(μ[ineq]*ineq.a[end] for ineq in ineqs)
+    else
+        ineq_slack = 0
+        ineq_obj = 0
+    end
+    if !isempty(eqs)
+        @variable(model, λ[eqs])
+        eq_slack = sum(λ[eq]*(eq - eq.a[end]) for eq in eqs)
+        eq_obj = sum(λ[eq]*eq.a[end] for eq in eqs)
+    else
+        eq_slack = 0
+        eq_obj = 0
+    end
+    slack = - v + s - eq_slack - ineq_slack 
+    cons = Dict()
+    for v in vertices(P.graph)
+        cons[v] = add_stationarity_constraints!(model, MP, v, P, props(P.graph, v)[:cell], w, slack)
+    end
+
+    for e in edges(P.graph)
+        add_coupling_constraints!(model, MP, e, P, w)
+    end
+
+    @objective(model, Max, s - eq_slack - ineq_slack) 
+    optimize!(model)
+    dist = []
+    for v in vertices(P.graph)
+        if props(P.graph, v)[:cell] isa Singleton
+            push!(dist, dual(cons[v]))
+        elseif props(P.graph, v)[:cell] isa Vector{BasicSemialgebraicSet}
+            push!(dist, sum(dual.(cons[v])).a[end])
+        elseif props(P.graph, v)[:cell] isa BasicSemialgebraicSet
+            push!(dist, dual(cons[v]).a[end])
+        end
+    end
+    return Bound(objective_value(model), model, P, Dict(key => value(w[key]) for key in keys(w))), dist
+end
+
+"""
+    max_entropy_measure(MP::MarkovProcess, order::Int, solver, P::Partition;
+                                   side_infos::BasicSemialgebraicSet)
+
+returns approximate values for the stationary measure which maximizes the entropy on the partition `P`.  
+"""
+function max_entropy_measure(MP::MarkovProcess, order::Int, solver, P::Partition,
+                             side_infos = FullSpace())
+    model = SOSModel(solver)
+    w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
+                   @variable(model) :
+                   @variable(model, [1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
+    @variable(model, u[vertices(P.graph)])
+    @variable(model, q[vertices(P.graph)])
+    @variable(model, s)
+    ineqs = inequalities(side_infos)
+    eqs = equalities(side_infos)
+    if !isempty(ineqs)
+        @variable(model, μ[ineqs] >= 0)
+        ineq_slack = sum(μ[ineq]*(ineq - ineq.a[end]) for ineq in ineqs)
+        ineq_obj =  sum(μ[ineq]*ineq.a[end] for ineq in ineqs)
+    else
+        ineq_slack = 0
+        ineq_obj = 0
+    end
+    if !isempty(eqs)
+        @variable(model, λ[eqs])
+        eq_slack = sum(λ[eq]*(eq - eq.a[end]) for eq in eqs)
+        eq_obj = sum(λ[eq]*eq.a[end] for eq in eqs)
+    else
+        eq_slack = 0
+        eq_obj = 0
+    end
+    cons = Dict()
+    for v in vertices(P.graph)
+        cons[v] = add_stationarity_constraints!(model, MP, v, P, props(P.graph, v)[:cell], w, s + q[v] - eq_slack - ineq_slack )
+    end
+
+    for e in edges(P.graph)
+        add_coupling_constraints!(model, MP, e, P, w)
+    end
+
+    @constraint(model, [v in vertices(P.graph)], [-1, q[v], u[v]] in MOI.DualExponentialCone())
+
+    @objective(model, Max, -sum(u) + s) 
+    optimize!(model)
+    dist = []
+    for v in vertices(P.graph)
+        if props(P.graph, v)[:cell] isa Singleton
+            push!(dist, dual(cons[v]))
+        elseif props(P.graph, v)[:cell] isa Vector{BasicSemialgebraicSet}
+            push!(dist, sum(dual.(cons[v])).a[end])
+        elseif props(P.graph, v)[:cell] isa BasicSemialgebraicSet
+            push!(dist, dual(cons[v]).a[end])
+        end
+    end
+    return Bound(-objective_value(model), model, P, Dict(key => value(w[key]) for key in keys(w))), dist
 end
