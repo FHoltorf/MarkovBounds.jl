@@ -5,6 +5,7 @@ mutable struct Singleton <: AbstractSemialgebraicSet
 end
 
 Singleton(x::Real) = Singleton([x])
+Singleton(x::Tuple) = Singleton([x...])
 
 macro singleton(x)
     return :(Singleton($(esc(x))))
@@ -99,17 +100,18 @@ end
 
 check_membership(X::FullSpace, x) = true
 
-# may cause redundant constraints but works for now!
+# not elegant but at least in principle correct!
 function complement(X::BasicSemialgebraicSet, H = FullSpace())
-    Ys = []
-    @assert isempty(equalties(X)) "Equality constraints are not allowed when computing the complement"
+    Ys = BasicSemialgebraicSet[]
+    @assert isempty(equalities(X)) "Equality constraints are not allowed when computing the complement"
     ineqs = inequalities(X)
     m = length(ineqs)
     for i in 1:m
         push!(Ys, intersect(H, BasicSemialgebraicSet(algebraicset(Polynomial{true, Float64}[]),
-                                                     [i == k ? -ineqs[k] : ineqs[k] for k in 1:m])))
+                                                    vcat(ineqs[1:end-1], -ineqs[end]))))
+        pop!(ineqs)
     end
-    return X
+    return Ys
 end
 
 function subs_X(X::BasicSemialgebraicSet, submap)
