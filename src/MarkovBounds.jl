@@ -25,6 +25,8 @@ using MetaGraphs: MetaGraph, MetaDiGraph, props, set_prop!
 import LinearAlgebra: qr, nullspace, diag, Diagonal, tr, transpose
 import Base: show
 import Parameters: @unpack
+import SumOfSquares.MultivariatePolynomials.polynomial
+import SumOfSquares.SemialgebraicSets.inequalities
 
 const PV = PolyVar
 const APL = AbstractPolynomialLike

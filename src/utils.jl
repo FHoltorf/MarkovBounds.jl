@@ -300,4 +300,5 @@ function dual_poly(w, t, trange)
     return Dict(key => subs(value(w[key]), t => key[1] > 1 ? (t - trange[key[1]-1])/(trange[key[1]] - trange[key[1]-1]) : t/trange[key[1]]) for key in keys(w))
 end
 
+inequalities(::FullSpace) = []
 polynomial(a::Real) = polynomial(Term{true}(a))
