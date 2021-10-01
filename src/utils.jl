@@ -3,14 +3,14 @@ export reaction_process_setup, langevin_process_setup, stoich_bounds, transform_
 
 stoichmat(rn::ReactionSystem) = prodstoichmat(rn) - substoichmat(rn)
 
-reformat_jumps(S::Matrix, species_to_index::Dict, x::AbstractVector) = [x .+ S[i,:] for i in 1:size(S,1)]
+reformat_jumps(S::Matrix, species_to_index::Dict, x::AbstractVector) = [x .+ S[:,i] for i in 1:size(S,2)]
 
 ∂(p,x) = differentiate.(p,x)
 ∂²(p,x,y) = differentiate(∂(p,x),y)
 ∂(X::BasicSemialgebraicSet) = [intersect(@set(X.p[i] == 0), [@set(X.p[k] >= 0) for k in 1:length(X.p) if k != i]..., X.V) for i in 1:length(X.p)]
 
 function reformat_reactions(rxns::Vector{Reaction}, species_to_index::Dict, x::Vector{<:PV}, params = Dict())
-    props = APL[]
+    props = Polynomial{true,Float64}[]
     for r in rxns
         @unpack rate, substrates, substoich, only_use_rate = r
         rate = rate isa Sym ? params[rate] : rate
@@ -109,42 +109,42 @@ function langevin_process_setup(rn::ReactionSystem;
 end
 
 function transform_state!(P::JumpProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
-    Π = [P.x[i] => z[i] for i in 1:length(P.x)]
-    P.a = subs.(P.a, Π...)
-    P.h = [subs.(h[iv], Π...) for h in P.h]
-    P.X = P.X isa FullSpace ? P.X : intersect([@set(subs.(p, Π...) >= 0) for p in P.X.p]...)
+    Π = P.x => z #[P.x[i] => z[i] for i in 1:length(P.x)]
+    P.a = map(p -> p(Π), P.a)
+    P.h = [map(p -> p(Π), h[iv]) for h in P.h]
+    P.X = subs_X(P.X, Π) #P.X isa FullSpace ? P.X : intersect([@set(p(Π) >= 0) for p in P.X.p]...)
     P.x = x
 end
 
 function transform_state!(P::ReactionProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.JumpProcess.x))
-    Π = [P.JumpProcess.x[i] => z[i] for i in 1:length(P.JumpProcess.x)]
-    P.species_to_state = Dict(spec => subs(P.species_to_state[spec], Π...) for spec in keys(P.species_to_state))
+    Π = P.JumpProcess.x => z #[P.JumpProcess.x[i] => z[i] for i in 1:length(P.JumpProcess.x)]
+    P.species_to_state = Dict(spec => P.species_to_state[spec](Π) for spec in keys(P.species_to_state))
     P.state_to_species = Dict(P.species_to_state[spec] => spec for spec in keys(P.species_to_state))
     transform_state!(P.JumpProcess, x, z; iv = iv)
 end
 
 function transform_state!(P::DiffusionProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
-    Π = [P.x[i] => z[i] for i in 1:length(P.x)]
-    P.f = subs.(P.f[iv], Π...)
-    P.σ = subs.(P.σ[iv, iv], Π...)
-    P.X = P.X isa FullSpace ? P.X : intersect([@set(subs.(p, Π...) >= 0) for p in P.X.p]...)
+    Π = P.x => z
+    P.f = map(p -> p(Π), P.f[iv])
+    P.σ = map(p -> p(Π), P.σ[iv, iv])
+    P.X = subs_X(P.X, Π) #P.X isa FullSpace ? P.X : intersect([@set(p(Π) >= 0) for p in P.X.p]...)
     P.x = x
 end
 
 function transform_state!(P::LangevinProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.JumpProcess.x))
-    Π = [P.DiffusionProcess.x[i] => z[i] for i in 1:length(P.DiffusionProcess.x)]
-    P.species_to_state = Dict(spec => subs(P.species_to_state[spec], Π...) for spec in keys(P.species_to_state))
+    Π = P.DiffusionProcess.x => z
+    P.species_to_state = Dict(spec => P.species_to_state[spec](Π) for spec in keys(P.species_to_state))
     P.state_to_species = Dict(P.species_to_state[spec] => spec for spec in keys(P.species_to_state))
     transform_state!(P.DiffusionProcess, x, z; iv = iv)
 end
 
 function transform_state!(P::JumpDiffusionProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
-    Π = [P.x[i] => z[i] for i in 1:length(P.x)]
-    P.a = subs.(P.a, Π...)
-    P.h = [subs.(h[iv], Π...) for h in P.h]
-    P.f = subs.(P.f[iv], Π...)
-    P.σ = subs.(P.σ[iv, iv], Π...)
-    P.X = P.X isa FullSpace ? P.X : intersect([@set(subs.(p, Π...) >= 0) for p in P.X.p]...)
+    Π = P.x => z #[P.x[i] => z[i] for i in 1:length(P.x)]
+    P.a = map(p -> p(Π), P.a)
+    P.h = [map(p -> p(Π), h[iv]) for h in P.h]
+    P.f = map(p -> p(Π), P.f[iv])
+    P.σ = map(p -> p(Π), P.σ[iv, iv])
+    P.X = subs_X(P.X, Π) #P.X isa FullSpace ? P.X : intersect([@set(p(Π) >= 0) for p in P.X.p]...)
     P.x = x
 end
 
@@ -156,7 +156,7 @@ function rescale_state!(P::JumpProcess, x0::Vector{<:Real})
 end
 
 function rescale_state!(P::ReactionProcess, x0::Vector{<:Real})
-    transform_state!(P, P.JumpProcess.x, P.JumpProcess.x .* x0)
+    transform_state!(P, P.JumpProcess.x, polynomial.(P.JumpProcess.x .* x0))
     for i in 1:length(P.JumpProcess.h)
         P.JumpProcess.h[i] ./= x0
     end
@@ -201,7 +201,7 @@ end
 function project_into_subspace!(P::MarkovProcess, B, f::Vector{<:Real})
     iv, dv, Q, R = partition_variables(B)
     if !isempty(dv)
-        z = Vector{Polynomial}(undef, size(B,2))
+        z = Vector{Polynomial{true, Float64}}(undef, size(B,2))
         @polyvar(x[1:length(iv)])
         z[iv] .= polynomial.(x)
         z[dv] .= polynomial.(round.(R[:,dv]\(Q'*f), digits = 12) - round.((R[:,dv]\R[:,iv]), digits = 12)*x)
@@ -210,7 +210,7 @@ function project_into_subspace!(P::MarkovProcess, B, f::Vector{<:Real})
 end
 
 function project_into_subspace!(P::Union{ReactionProcess,LangevinProcess}, x0::Vector{<:Real})
-    B = transpose(nullspace(stoichmat(P.ReactionSystem)))
+    B = transpose(nullspace(transpose(stoichmat(P.ReactionSystem))))
     if !isempty(B)
         f = B*x0
         project_into_subspace!(P, B, f)
@@ -298,6 +298,18 @@ function dual_poly(w, t, trange)
         trange = trange[2:end]
     end
     return Dict(key => subs(value(w[key]), t => key[1] > 1 ? (t - trange[key[1]-1])/(trange[key[1]] - trange[key[1]-1]) : t/trange[key[1]]) for key in keys(w))
+end
+
+function subs_X(X::BasicSemialgebraicSet, submap)
+    eqs = Polynomial{true, Float64}[]
+    for eq in equalities(X)
+        push!(eqs, eq(submap))
+    end
+    ineqs = Polynomial{true, Float64}[]
+    for eq in inequalities(X)
+        push!(ineqs, eq(submap))
+    end
+    return BasicSemialgebraicSet(algebraicset(eqs), ineqs)
 end
 
 inequalities(::FullSpace) = []

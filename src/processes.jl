@@ -27,15 +27,15 @@ constructor returns `JumpProcess` object with fields
 """
 mutable struct JumpProcess <: MarkovProcess
     x::Vector{<:PV} # state
-    a::Vector{<:APL} # propensities
-    h::Vector{Vector{<:APL}} # jumps
+    a::Vector{<:Polynomial} # propensities
+    h::Vector{Vector{<:Polynomial}} # jumps
     X # state space enclosure
     iv::PV
     controls::Vector{<:PV}
     poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
     function JumpProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, X = FullSpace();
                          iv = PV{true}("t"), controls = PV{true}[], poly_vars = Dict())
-         return new(x, a, h, X, iv, controls, poly_vars)
+        return new(x, polynomial.(a), map(p -> polynomial.(p), h), X, iv, controls, poly_vars)
     end
 end
 
@@ -94,15 +94,15 @@ constructor returns `DiffusionProcess` object with fields
 """
 mutable struct DiffusionProcess <: MarkovProcess
     x::Vector{<:PV}  # state
-    f::Vector{<:APL} # drift
-    σ::Matrix{<:APL} # diffusion matrix
+    f::Vector{<:Polynomial} # drift
+    σ::Matrix{<:Polynomial} # diffusion matrix
     X # support
     iv::PV
     controls::Vector{<:PV}
     poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
     function DiffusionProcess(x::Vector{<:PV}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
                               iv = PV{true}("t"), controls = PV{true}[], poly_vars = Dict())
-        return new(x, f, σ, X, iv, controls, poly_vars)
+        return new(x, polynomial.(f), polynomial.(σ), X, iv, controls, poly_vars)
     end
 end
 
@@ -151,17 +151,17 @@ constructor returns `JumpDiffusionProcess` object with fields
 """
 mutable struct JumpDiffusionProcess <: MarkovProcess
     x::Vector{<:PV} # state
-    a::Vector{<:APL} # propensities
-    h::Vector{Vector{<:APL}} # jumps
-    f::Vector{<:APL} # drift
-    σ::Matrix{<:APL} # diffusion matrix
+    a::Vector{<:Polynomial} # propensities
+    h::Vector{Vector{<:Polynomial}} # jumps
+    f::Vector{<:Polynomial} # drift
+    σ::Matrix{<:Polynomial} # diffusion matrix
     X # state space enclosure
     iv::PV
     controls::Vector{<:PV}
     poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
     function JumpDiffusionProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
                                   iv = PV{true}("t"), controls = PV{true}[], poly_vars = Dict())
-        return new(x, a, h, f, σ, X, iv, controls, poly_vars)
+        return new(x, polynomial.(a), map(p -> polynomial.(p), h), polynomial.(f), polynomial.(σ), X, iv, controls, poly_vars)
     end
 end
 
