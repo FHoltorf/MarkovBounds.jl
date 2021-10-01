@@ -100,7 +100,7 @@ end
 
 check_membership(X::FullSpace, x) = true
 
-# not elegant but at least in principle correct!
+# not elegant but at least correct!
 function complement(X::BasicSemialgebraicSet, H = FullSpace())
     Ys = BasicSemialgebraicSet[]
     @assert isempty(equalities(X)) "Equality constraints are not allowed when computing the complement"
@@ -112,18 +112,6 @@ function complement(X::BasicSemialgebraicSet, H = FullSpace())
         pop!(ineqs)
     end
     return Ys
-end
-
-function subs_X(X::BasicSemialgebraicSet, submap)
-    eqs = Polynomial{true, Float64}[]
-    for eq in equalities(X)
-        push!(eqs, subs(eq, submap))
-    end
-    ineqs = Polynomial{true, Float64}[]
-    for eq in inequalities(X)
-        push!(ineqs, subs(eq, submap))
-    end
-    return BasicSemialgebraicSet(algebraicset(eqs), ineqs)
 end
 
 # in general this is conservative but holds
