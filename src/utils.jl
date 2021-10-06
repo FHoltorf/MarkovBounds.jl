@@ -109,7 +109,7 @@ function langevin_process_setup(rn::ReactionSystem;
 end
 
 function transform_state!(P::JumpProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
-    Π = P.x => z #[P.x[i] => z[i] for i in 1:length(P.x)]
+    Π = P.x => polynomial.(z) #[P.x[i] => z[i] for i in 1:length(P.x)]
     P.a = map(p -> p(Π), P.a)
     P.h = [map(p -> p(Π), h[iv]) for h in P.h]
     P.X = subs_X(P.X, Π) #P.X isa FullSpace ? P.X : intersect([@set(p(Π) >= 0) for p in P.X.p]...)
@@ -117,14 +117,14 @@ function transform_state!(P::JumpProcess, x::AbstractVector, z::AbstractVector; 
 end
 
 function transform_state!(P::ReactionProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.JumpProcess.x))
-    Π = P.JumpProcess.x => z #[P.JumpProcess.x[i] => z[i] for i in 1:length(P.JumpProcess.x)]
+    Π = P.JumpProcess.x => polynomial.(z) #[P.JumpProcess.x[i] => z[i] for i in 1:length(P.JumpProcess.x)]
     P.species_to_state = Dict(spec => P.species_to_state[spec](Π) for spec in keys(P.species_to_state))
     P.state_to_species = Dict(P.species_to_state[spec] => spec for spec in keys(P.species_to_state))
     transform_state!(P.JumpProcess, x, z; iv = iv)
 end
 
 function transform_state!(P::DiffusionProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
-    Π = P.x => z
+    Π = P.x => polynomial.(z)
     P.f = map(p -> p(Π), P.f[iv])
     P.σ = map(p -> p(Π), P.σ[iv, iv])
     P.X = subs_X(P.X, Π) #P.X isa FullSpace ? P.X : intersect([@set(p(Π) >= 0) for p in P.X.p]...)
@@ -132,14 +132,14 @@ function transform_state!(P::DiffusionProcess, x::AbstractVector, z::AbstractVec
 end
 
 function transform_state!(P::LangevinProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.JumpProcess.x))
-    Π = P.DiffusionProcess.x => z
+    Π = P.DiffusionProcess.x => polynomial.(z)
     P.species_to_state = Dict(spec => P.species_to_state[spec](Π) for spec in keys(P.species_to_state))
     P.state_to_species = Dict(P.species_to_state[spec] => spec for spec in keys(P.species_to_state))
     transform_state!(P.DiffusionProcess, x, z; iv = iv)
 end
 
 function transform_state!(P::JumpDiffusionProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
-    Π = P.x => z #[P.x[i] => z[i] for i in 1:length(P.x)]
+    Π = P.x => polynomial.(z) #[P.x[i] => z[i] for i in 1:length(P.x)]
     P.a = map(p -> p(Π), P.a)
     P.h = [map(p -> p(Π), h[iv]) for h in P.h]
     P.f = map(p -> p(Π), P.f[iv])
