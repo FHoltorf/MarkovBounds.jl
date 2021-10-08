@@ -89,6 +89,10 @@ function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_
     @constraint(model, subs(w, MP.iv => 1) <= rhs, domain = space_domain)
 end
 
+function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Singleton, w, rhs)
+    @constraint(model, subs(w, MP.iv => 1) <= rhs)
+end
+
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Vector{<:AbstractSemialgebraicSet}, w, rhs)
     for X in space_domain
         @constraint(model, subs(w, MP.iv => 1) <= rhs, domain = X)
