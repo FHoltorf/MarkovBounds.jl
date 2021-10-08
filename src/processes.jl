@@ -272,7 +272,7 @@ function inf_generator(MP::JumpProcess, w::Dict, idx::Tuple{Int, Int}, p::Partit
             if props(p.graph, u)[:cell] isa Singleton
                 gen += prop*(w[k,u] - w[k,v])
             else
-                gen += prop*(w[k,u](MP.x => x_u) - w[k,v])
+                gen += prop*(subs(w[k,u], MP.x => x_u) - w[k,v])
             end
         end
     end
@@ -290,7 +290,7 @@ function inf_generator(MP::JumpProcess, w::Dict, v::Int, p::Partition)
             if props(p.graph, u)[:cell] isa Singleton
                 gen += prop*(w[u] - w[v])
             else
-                gen += prop*(w[u](MP.x => x_u) - w[v])
+                gen += prop*(subs(w[u], MP.x => x_u) - w[v])
             end
         end
     end
