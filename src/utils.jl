@@ -227,7 +227,7 @@ function init_moments(x, x0, d)
     return moms
 end
 
-init_moments(x, x0, d, p::Partition) =  Dict(p.get_vertex(x0) => init_moments(x, x0, d))
+init_moments(x, x0, d, P::Partition) =  Dict(P.get_vertex(x0) => init_moments(x, x0, d))
 
 linearize_index(idx,rs) = idx[1] + (length(idx) > 1 ? sum((idx[i] - 1) * prod(rs[1:i-1]) for i in 2:length(idx)) : 0)
 
