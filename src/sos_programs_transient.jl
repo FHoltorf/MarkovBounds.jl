@@ -66,7 +66,6 @@ function transient_polynomial(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, tran
     model, w = transient_pop(MP, μ0, p, d, trange, solver, P)
     optimize!(model)
     return Bound(objective_value(model), model, P, dual_poly(w, MP.iv, trange))
-
 end
 
 function transient_polynomial(MP::MarkovProcess, μ0::Dict, p::Num, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
@@ -286,4 +285,136 @@ function transient_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::Abstrac
 	RP, x0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
 	μ0 = init_moments(RP.JumpProcess.x, x0, d + maximum(maxdegree.(RP.JumpProcess.a)))
  	return transient_covariance_ellipsoid(RP.JumpProcess, μ0, [RP.species_to_state[x] for x in S], d, trange, solver)
+end
+
+
+# distributed 
+function transient_indicator(MP::MarkovProcess, μ0::Dict, v_target::Int, d::Int,
+							trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X); sense = 1)
+	if trange[1] == 0
+		trange = trange[2:end]
+	end
+	t = MP.iv
+	nT = length(trange)
+	Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
+	T  = @set(t >= 0 && t <= 1)
+
+	model = SOSModel(solver)
+	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
+						@variable(model, [1], Poly(monomials(t, 0:d)))[1] :
+						@variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+
+	for v in vertices(P.graph)
+		add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], T, Δt, w, 0)
+	end
+
+	for v in vertices(P.graph)
+		flag = (v_target == v)
+		add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], sense*flag)
+	end
+
+	for e in edges(P.graph)
+		add_coupling_constraints!(model, MP, e, P, T, Δt, w)
+	end
+	@objective(model, Max, expectation(μ0[first(keys(μ0))] isa Dict ? [subs(w[1, v], t => 0) for v in vertices(P.graph)] : subs(w[1, 1], t => 0), μ0))
+	
+	optimize!(model)
+	return Bound(objective_value(model), model, P, dual_poly(w, t, trange))
+end
+# add transient probability mass
+
+function approximate_transient_measure(MP::MarkovProcess, μ0::Dict, p::APL, d::Int,
+									   trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
+	if trange[1] == 0
+		trange = trange[2:end]
+	end
+	t = MP.iv
+	nT = length(trange)
+	Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
+	T  = @set(t >= 0 && t <= 1)
+
+	model = SOSModel(solver)
+	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
+						@variable(model, [1], Poly(monomials(t, 0:d)))[1] :
+						@variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+
+	for v in vertices(P.graph)
+		add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], T, Δt, w, 0)
+	end
+
+	cons = Dict()
+	for v in vertices(P.graph)
+		cons[v] = add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], p)
+	end
+
+	for e in edges(P.graph)
+		add_coupling_constraints!(model, MP, e, P, T, Δt, w)
+	end
+	@objective(model, Max, expectation(μ0[first(keys(μ0))] isa Dict ? [subs(w[1, v], t => 0) for v in vertices(P.graph)] : subs(w[1, 1], t => 0), μ0))
+	
+	optimize!(model)
+	dist = []
+    for v in vertices(P.graph)
+        if props(P.graph, v)[:cell] isa Singleton
+            push!(dist, dual(cons[v]).a[end])
+        elseif props(P.graph, v)[:cell] isa Vector{BasicSemialgebraicSet}
+            push!(dist, sum(dual.(cons[v])).a[end])
+        elseif props(P.graph, v)[:cell] isa BasicSemialgebraicSet
+            push!(dist, dual(cons[v]).a[end])
+        end
+    end
+	return Bound(objective_value(model), model, P, dual_poly(w, t, trange)), dist
+end
+"""
+    max_entropy_measure(MP::MarkovProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition;
+                        side_infos::BasicSemialgebraicSet)
+
+returns approximate values for the transient measure which maximizes the entropy on the partition `P` at time t.  
+"""
+function max_entropy_measure(MP::MarkovProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition)
+	if trange[1] == 0
+		trange = trange[2:end]
+	end
+	t = MP.iv
+	nT = length(trange)
+	Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
+	T  = @set(t >= 0 && t <= 1)
+
+	model = SOSModel(solver)
+	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
+						@variable(model, [1], Poly(monomials(t, 0:d)))[1] :
+						@variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+
+	for v in vertices(P.graph)
+		add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], T, Δt, w, 0)
+	end
+
+	cons = Dict()
+	@variable(model, u[vertices(P.graph)])
+	@variable(model, q[vertices(P.graph)])
+	for v in vertices(P.graph)
+		cons[v] = add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], -q[v])
+	end
+
+	for e in edges(P.graph)
+		add_coupling_constraints!(model, MP, e, P, T, Δt, w)
+	end
+
+	@constraint(model, [v in vertices(P.graph)], [-1, q[v], u[v]] in MOI.DualExponentialCone())
+
+	@objective(model, Max, expectation(μ0[first(keys(μ0))] isa Dict ? [subs(w[1, v], t => 0) for v in vertices(P.graph)] : subs(w[1, 1], t => 0), μ0) 
+						   - sum(u))
+	
+	optimize!(model)
+	dist = []
+    for v in vertices(P.graph)
+        if props(P.graph, v)[:cell] isa Singleton
+            push!(dist, dual(cons[v]).a[end])
+        elseif props(P.graph, v)[:cell] isa Vector{BasicSemialgebraicSet}
+            push!(dist, sum(dual.(cons[v])).a[end])
+        elseif props(P.graph, v)[:cell] isa BasicSemialgebraicSet
+            push!(dist, dual(cons[v]).a[end])
+        end
+    end
+	return Bound(objective_value(model), model, P, dual_poly(w, t, trange)), dist
 end
