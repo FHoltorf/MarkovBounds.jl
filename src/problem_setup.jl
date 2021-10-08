@@ -98,8 +98,8 @@ end
 function add_coupling_constraints!(model::Model, MP::MarkovProcess, e::Edge, P::Partition,
                                    time_domain::AbstractSemialgebraicSet, Δt::AbstractVector, w)
     nT = length(Δt)
-    if props(P.graph, e.dst) isa Singleton
-        @constraint(model, [k in 1:nT], w[k, e.dst] - w[k, e.src](MP.x => props(P.graph, e.dst)[:cell].x) == 0, domain = time_domain)
+    if props(P.graph, e.dst)[:cell] isa Singleton
+        @constraint(model, [k in 1:nT], w[k, e.dst] - subs(w[k, e.src], MP.x => props(P.graph, e.dst)[:cell].x) == 0, domain = time_domain)
     else
         Xs = props(P.graph, e)[:interface]
         for X in Xs
