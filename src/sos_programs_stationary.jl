@@ -409,7 +409,11 @@ function max_entropy_measure(MP::MarkovProcess, order::Int, solver, P::Partition
     dist = []
     for v in vertices(P.graph)
         if props(P.graph, v)[:cell] isa Singleton
-            push!(dist, dual(cons[v]))
+            if dual(cons[v]) isa Number 
+                push!(dist, dual(cons[v]))
+            else
+                push!(dist, dual(cons[v]).a[end])
+            end
         elseif props(P.graph, v)[:cell] isa Vector{BasicSemialgebraicSet}
             push!(dist, sum(dual.(cons[v])).a[end])
         elseif props(P.graph, v)[:cell] isa BasicSemialgebraicSet
