@@ -62,7 +62,7 @@ function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
     end
 
     for v in vertices(P.graph)
-        add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT, v], CP.Objective.m)
+        add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT, v], CP.Objective.m, v)
     end
 
     for e in edges(P.graph)

@@ -31,7 +31,7 @@ function transient_pop(MP::MarkovProcess, μ0::Dict, p::APL, d::Int,
     end
 
     for v in vertices(P.graph)
-        add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], p)
+        add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], p, v)
     end
 
     for e in edges(P.graph)
@@ -158,7 +158,7 @@ function transient_variance(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange
 	end
 
 	for v in vertices(P.graph)
-		add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT, v], -(p^2 + 2*S[1]*p))
+		add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT, v], -(p^2 + 2*S[1]*p), v)
 	end
 
 	for e in edges(P.graph)
@@ -240,7 +240,7 @@ function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, p::Vector{
 	end
 
 	for v in vertices(P.graph)
-		add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT, v], -(p'*S[1:n, 1:n]*p + 2*S[end,1:n]'*p))
+		add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT, v], -(p'*S[1:n, 1:n]*p + 2*S[end,1:n]'*p), v)
 	end
 
 	for e in edges(P.graph)
@@ -310,7 +310,7 @@ function transient_indicator(MP::MarkovProcess, μ0::Dict, v_target::Int, d::Int
 
 	for v in vertices(P.graph)
 		flag = (v_target == v)
-		add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], sense*flag)
+		add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], sense*flag, v)
 	end
 
 	for e in edges(P.graph)
@@ -344,7 +344,7 @@ function approximate_transient_measure(MP::MarkovProcess, μ0::Dict, p::APL, d::
 
 	cons = Dict()
 	for v in vertices(P.graph)
-		cons[v] = add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], p)
+		cons[v] = add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], p, v)
 	end
 
 	for e in edges(P.graph)
@@ -393,7 +393,7 @@ function max_entropy_measure(MP::MarkovProcess, μ0::Dict, d::Int, trange::Abstr
 	@variable(model, u[vertices(P.graph)])
 	@variable(model, q[vertices(P.graph)])
 	for v in vertices(P.graph)
-		cons[v] = add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], -q[v])
+		cons[v] = add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], -q[v], v)
 	end
 
 	for e in edges(P.graph)
