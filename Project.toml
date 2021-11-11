@@ -18,7 +18,7 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
 Catalyst = "6, 9"
-DynamicPolynomials = "0.3"
+DynamicPolynomials = "0.3, 0.4"
 LightGraphs = "1"
 MetaGraphs = "0.6"
 Parameters = "0.12"
