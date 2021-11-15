@@ -51,7 +51,7 @@ function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::P
                                    Δt::AbstractVector, w, rhs::APL; ρ::Real = 0)
     nT = length(Δt)
     t = MP.iv
-    model.obj_dict[Symbol("dynamics_$v")] = @constraint(model, [k in 1:nT], extended_inf_generator(MP, w, (k, v), P; scale = Δt[k])  - ρ*w[k, v] >= Δt[k]*rhs(MP.x => space_domain.x), domain = time_domain, base_name = "dynamics_$v")
+    model.obj_dict[Symbol("dynamics_$v")] = @constraint(model, [k in 1:nT], extended_inf_generator(MP, w, (k, v), P; scale = Δt[k])  - ρ*w[k, v] >= Δt[k]*subs(rhs, MP.x => space_domain.x), domain = time_domain, base_name = "dynamics_$v")
     model.obj_dict[Symbol("temporal_coupling_$v")] = @constraint(model, [k in 2:nT], w[k, v](t => 0) - w[k-1,v](t => 1) >= 0, base_name = "temporal_coupling_$v")
 end
 
@@ -81,7 +81,7 @@ function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_
 end
 
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Singleton, w, rhs::APL, v::Int)
-    model.obj_dict[Symbol("transversality_$v")] = @constraint(model, subs(w, MP.iv => 1) <= rhs(MP.x => space_domain.x), base_name = "transversality_$v")
+    model.obj_dict[Symbol("transversality_$v")] = @constraint(model, subs(w, MP.iv => 1) <= subs(rhs, MP.x => space_domain.x), base_name = "transversality_$v")
 end
 
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::AbstractSemialgebraicSet, w, rhs, v::Int)
@@ -92,7 +92,7 @@ function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_
     model.obj_dict[Symbol("transversality_$v")] = @constraint(model, subs(w, MP.iv => 1) <= rhs, base_name = "transversality_$v")
 end
 
-function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Vector{<:AbstractSemialgebraicSet}, w, rhs)
+function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Vector{<:AbstractSemialgebraicSet}, w, rhs, v::Int)
     model.obj_dict[Symbol("transversality_$v")] = @constraint(model, [X in space_domain], subs(w, MP.iv => 1) <= rhs, domain = X, base_name = "transversality_$v")
 end
 

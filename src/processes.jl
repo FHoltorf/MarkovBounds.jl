@@ -245,8 +245,8 @@ mutable struct LagrangeMayer
     m::APL
 end
 
-Lagrange(l) = LagrangeMayer(l, 0*l) # not elegant but works
-Mayer(m) = LagrangeMayer(0*m, m) # not elegant but works
+Lagrange(l) = LagrangeMayer(l, polynomial(0)) # not elegant but works
+Mayer(m) = LagrangeMayer(polynomial(0), m) # not elegant but works
 
 mutable struct ChanceConstraint
     X::BasicSemialgebraicSet
@@ -265,8 +265,14 @@ function inf_generator(MP::JumpProcess, w::Dict, idx::Tuple{Int, Int}, p::Partit
     x_v = props(p.graph, v)[:cell].x
     gen = 0
     for i in 1:length(MP.a)
-        prop = MP.a[i](MP.x => x_v)
-        if prop != 0
+        if isempty(intersect(MP.a[i].x.vars, MP.controls)) 
+            prop = MP.a[i](MP.x => x_v)
+            skip = prop == 0 ? true : false
+        else
+            prop = subs(MP.a[i], MP.x => x_v)
+            skip = false
+        end
+        if !skip
             x_u = [h(MP.x => x_v) for h in MP.h[i]]
             u = p.get_vertex(x_u)
             if props(p.graph, u)[:cell] isa Singleton
@@ -283,8 +289,14 @@ function inf_generator(MP::JumpProcess, w::Dict, v::Int, p::Partition)
     x_v = props(p.graph, v)[:cell].x
     gen = 0
     for i in 1:length(MP.a)
-        prop = MP.a[i](MP.x => x_v)
-        if abs(prop) >= 1e-10
+        if isempty(intersect(MP.a[i].x.vars, MP.controls)) 
+            prop = MP.a[i](MP.x => x_v)
+            skip = prop == 0 ? true : false
+        else
+            prop = subs(MP.a[i], MP.x => x_v)
+            skip = false
+        end
+        if !skip
             x_u = [h(MP.x => x_v) for h in MP.h[i]]
             u = p.get_vertex(x_u)
             if props(p.graph, u)[:cell] isa Singleton
