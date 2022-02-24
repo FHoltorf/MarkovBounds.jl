@@ -1,4 +1,4 @@
-export optimal_control
+export optimal_control, infinite_horizon_control
 
 """
 	optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
@@ -120,7 +120,8 @@ function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 		add_coupling_constraints!(model, MP, e, P, T, Δt, w)
 	end
 
-	obj = expectation([subs(w[1,v], t => 0) for v in vertices(P.graph)], μ0)
+	obj = expectation(μ0[first(keys(μ0))] isa Dict ? [subs(w[1, v], t => 0) for v in vertices(P.graph)] : subs(w[1, 1], t => 0), μ0)
+
 	if !isempty(CP.PathChanceConstraints)
 		# TODO: improve formulation to take advantage of partition
 		for PC in CP.PathChanceConstraints
@@ -187,15 +188,20 @@ function finite_horizon_TP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 end
 
 ## Discounted inf horizon control problems
-function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
+function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
 	@assert isa(CP.Objective, LagrangeMayer) "Objective function type not supported"
 	@assert CP.Objective.m == 0 "Mayer term must be 0 for infinite horizon problem"
-	@assert isempty(CP.ChancePathConstraints) "Chance path constraints are not supported in infinite horizon problems"
-	@assert isempty(CP.ChanceTerminalConstraints) "Chance terminal constraints are not supported in infinite horizon problems"
-	return infinite_horizon_LM(CP, μ0, d, trange, solver)
+	@assert isempty(CP.PathChanceConstraints) "Chance path constraints are not supported in infinite horizon problems"
+	@assert isempty(CP.TerminalChanceConstraints) "Chance terminal constraints are not supported in infinite horizon problems"
+	if trange[1] == 0
+		trange = trange[2:end]
+	end
+	model, w, w∞ = infinite_horizon_LM(CP, μ0, d, trange, solver, P)
+	optimize!(model)
+	return Bound(objective_value(model), model, P, merge(dual_poly(w, CP.MP.iv, trange), dual_poly(w∞)))
 end
 
-function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector, solver, P::Partition = trivial_partition(CP.MP.X))
+function infinite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector, solver, P::Partition = trivial_partition(CP.MP.X))
     MP = CP.MP
     t = MP.iv
     nT = length(trange)
@@ -213,22 +219,22 @@ function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange:
 
 	for v in vertices(P.graph)
         add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], intersect(T, CP.U), Δt, w, - CP.Objective.l; ρ = ρ)
-		add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], intersect(CP.U), [1], w∞, - CP.Objective.l; ρ = ρ)
+		add_tail_constraints!(model, MP, v, P, props(P.graph, v)[:cell], CP.U, w∞, - CP.Objective.l; ρ = ρ)
 		if props(P.graph, v)[:cell] isa Singleton
 			@constraint(model, w∞[v] - w[nT, v](t => 1) >= 0)
 		else
 			@constraint(model, w∞[v] - subs(w[nT, v], t => 1) >= 0, domain = props(P.graph, v)[:cell])
 		end
-		add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w∞, 0)
     end
 
     for e in edges(P.graph)
         add_coupling_constraints!(model, MP, e, P, T, Δt, w)
 		add_coupling_constraints!(model, MP, e, P, T, [1], w∞)
     end
+	obj = expectation(μ0[first(keys(μ0))] isa Dict ? [subs(w[1, v], t => 0) for v in vertices(P.graph)] : subs(w[1, 1], t => 0), μ0)
 
-    @objective(model, Max, expectation([subs(w[1,v], t => 0) for v in vertices(P.graph)], μ0))
-    return model, merge(w, w∞)
+    @objective(model, Max, obj)
+    return model, w, w∞
 end
 
 #=

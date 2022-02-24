@@ -76,6 +76,36 @@ function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::P
     model.obj_dict[Symbol("temporal_coupling_$v")] = @constraint(model, [k in 2:nT, X in space_domain], subs(w[k, v], t => 0) - subs(w[k-1,v], t => 1) >= 0, domain = X, base_name = "temporal_coupling_$v")
 end
 
+# for infinite horizon problems
+function add_tail_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition,
+                               space_domain::Singleton,
+                               control_domain::AbstractSemialgebraicSet,
+                               w∞, rhs; ρ::Real = 0)
+    model.obj_dict[Symbol("tail_dynamics_$v")] = @constraint(model, inf_generator(MP, w∞, v, P) - ρ*w∞[v] >= rhs, domain = control_domain, base_name = "tail_dynamics_$v")
+end
+
+function add_tail_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition,
+                               space_domain::Singleton,
+                               control_domain::AbstractSemialgebraicSet,
+                               w∞, rhs::APL; ρ::Real = 0)
+    model.obj_dict[Symbol("tail_dynamics_$v")] = @constraint(model, inf_generator(MP, w∞, v, P)  - ρ*w∞[v] >= rhs(MP.x => space_domain.x), domain = control_domain, base_name = "tail_dynamics_$v")
+end
+
+function add_tail_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition,
+                               space_domain::AbstractSemialgebraicSet,
+                               control_domain::AbstractSemialgebraicSet,
+                               w∞, rhs; ρ::Real = 0)
+    model.obj_dict[Symbol("tail_dynamics_$v")] = @constraint(model, inf_generator(MP, w∞[v]) - ρ*w∞[v] >= rhs, domain = intersect(space_domain, control_domain), base_name = "tail_dynamics_$v")
+end
+
+function add_tail_constraints!(model::Model, MP::MarkovProcess, v::Int, P::Partition,
+                               space_domain::Vector{<:AbstractSemialgebraicSet},
+                               control_domain::AbstractSemialgebraicSet,
+                               w∞, rhs; ρ::Real = 0)
+    model.obj_dict[Symbol("tail_dynamics_$v")] = @constraint(model, [X in space_domain], inf_generator(MP, w∞[v]) - ρ*w∞[v] >= rhs, domain = intersect(X, control_domain), base_name = "tail_dynamics_$v")
+end
+
+# terminal cost transversality constraints
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Singleton, w, rhs::Real, v::Int)
     model.obj_dict[Symbol("transversality_$v")] = @constraint(model, subs(w, MP.iv => 1) <= rhs, base_name = "transversality_$v")
 end
