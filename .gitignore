@@ -3,5 +3,6 @@
 *.jl.mem
 *checkpoint.ipynb
 *.ipynb_checkpoints
+.DS_Store
 /docs/build/
 /products
