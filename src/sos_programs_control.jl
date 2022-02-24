@@ -138,6 +138,7 @@ function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 	return model, w
 end
 
+# terminal probability
 function finite_horizon_TP(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
 	nT = length(trange)
 	MP = CP.MP
