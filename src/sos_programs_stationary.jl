@@ -269,10 +269,14 @@ where `v` refers to the vertex of the partition graph that corresponds to the se
 """
 function stationary_probability_mass(MP::MarkovProcess, X::BasicSemialgebraicSet, d::Int, solver)
 	P = split_state_space(MP, X)
- 	return stationary_probability_mass(MP, 1, d, solver, P)
+ 	return stationary_probability_mass(MP, [1], d, solver, P)
 end
 
 function stationary_probability_mass(MP::MarkovProcess, v::Int, order::Int, solver, P::Partition)
+	return stationary_probability_mass(MP, [v], order, solver, P)
+end
+
+function stationary_probability_mass(MP::MarkovProcess, v::AbstractVector{Int}, order::Int, solver, P::Partition)
 	model, w = stationary_indicator(MP, v, order, P, solver; sense = 1) # Max
 	optimize!(model)
 	ub = Bound(-objective_value(model), model, P, Dict(v => value(w[v]) for v in vertices(P.graph)))
@@ -283,6 +287,10 @@ function stationary_probability_mass(MP::MarkovProcess, v::Int, order::Int, solv
 end
 
 function stationary_indicator(MP::MarkovProcess, v_target::Int, order::Int, P::Partition, solver; sense = 1)
+    return stationary_indicator(MP, [v_target], order, P, solver, sense = sense)
+end
+
+function stationary_indicator(MP::MarkovProcess, v_target::AbstractVector{Int}, order::Int, P::Partition, solver; sense = 1)
     model = SOSModel(solver)
     @variable(model, s)
     w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
@@ -290,7 +298,7 @@ function stationary_indicator(MP::MarkovProcess, v_target::Int, order::Int, P::P
                    @variable(model, [1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
     cons = Dict()
     for v in vertices(P.graph)
-        flag = (v_target == v)
+        flag = (v in v_target)
         cons[v] = add_stationarity_constraints!(model, MP, v, P, props(P.graph, v)[:cell], w, s + flag*sense)
     end
 
