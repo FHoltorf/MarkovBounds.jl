@@ -290,6 +290,11 @@ end
 
 # distributed 
 function transient_indicator(MP::MarkovProcess, μ0::Dict, v_target::Int, d::Int,
+							 trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X); sense = 1)
+	return transient_indicator(MP, μ0, [v_target], d, trange, solver, P, sense = sense)
+end
+
+function transient_indicator(MP::MarkovProcess, μ0::Dict, v_target::AbstractArray{Int}, d::Int,
 							trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X); sense = 1)
 	if trange[1] == 0
 		trange = trange[2:end]
@@ -309,7 +314,7 @@ function transient_indicator(MP::MarkovProcess, μ0::Dict, v_target::Int, d::Int
 	end
 
 	for v in vertices(P.graph)
-		flag = (v_target == v)
+		flag = (v in v_target)
 		add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], sense*flag, v)
 	end
 
@@ -321,8 +326,8 @@ function transient_indicator(MP::MarkovProcess, μ0::Dict, v_target::Int, d::Int
 	optimize!(model)
 	return Bound(objective_value(model), model, P, dual_poly(w, t, trange))
 end
-# add transient probability mass
 
+# add transient probability mass
 function approximate_transient_measure(MP::MarkovProcess, μ0::Dict, p::APL, d::Int,
 									   trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
 	if trange[1] == 0

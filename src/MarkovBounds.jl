@@ -40,7 +40,4 @@ include("problem_setup.jl")
 include("sos_programs_stationary.jl")
 include("sos_programs_transient.jl")
 include("sos_programs_control.jl")
-
-
-
 end
