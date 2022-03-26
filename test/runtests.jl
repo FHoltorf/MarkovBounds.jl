@@ -1,4 +1,4 @@
-using MarkovBounds, COSMO
+using MarkovBounds, COSMO, Catalyst
 using Test
 
 opt = COSMO
@@ -11,11 +11,11 @@ opt = COSMO
     A = species(BD)[1]
     A0 = Dict(A => 2.0)
     A_scale = Dict(A => 10.0)
-    val, stat, time = stationary_mean(BD, A0, A, 2, opt.Optimizer, A_scale)
-    @test val[1] <= val[2]
+    lb, ub = stationary_mean(BD, A0, A, 4, opt.Optimizer, A_scale)
+    @test lb.value <= ub.value
 
-    val, stat, time = stationary_variance(BD, A0, A, 2, opt.Optimizer, A_scale)
-    @test val >= 0
+    ub = stationary_variance(BD, A0, A, 2, opt.Optimizer, A_scale)
+    @test ub.value >= 0
 
     # Michaelis-Menten System
     MM = @reaction_network begin
@@ -27,8 +27,8 @@ opt = COSMO
     S, E, SE, P = species(MM)
     x0 = Dict(S => 10, E => 5, SE => 0, P => 0)
     x_scale = Dict(S => 10, E => 10, SE => 10, P => 10)
-    val, stat, time = stationary_covariance_ellipsoid(MM, x0, [S, P], 2, opt.Optimizer, x_scale)
-    @test val >= 0
+    lb = stationary_covariance_ellipsoid(MM, x0, [S, P], 2, opt.Optimizer, x_scale)
+    @test lb.value >= 0
 end
 
 @testset "transient bounds" begin
@@ -40,11 +40,11 @@ end
     A0 = Dict(A => 2.0)
     A_scale = Dict(A => 10.0)
     trange = 0:0.1:1.0
-    val, stat, time = transient_mean(BD, A0, A, 2, trange, opt.Optimizer, A_scale)
-    @test val[2] >= val[1]
+    lb, ub = transient_mean(BD, A0, A, 2, trange, opt.Optimizer, A_scale)
+    @test lb.value <= ub.value
 
-    val, stat, time = transient_variance(BD, A0, A, 2, trange, opt.Optimizer, A_scale)
-    @test val >= 0
+    ub = transient_variance(BD, A0, A, 2, trange, opt.Optimizer, A_scale)
+    @test ub.value >= 0
 
     # Michaelis-Menten System
     MM = @reaction_network begin
@@ -56,8 +56,8 @@ end
     S, E, SE, P = species(MM)
     x0 = Dict(S => 10, E => 5, SE => 0, P => 0)
     x_scale = Dict(S => 10, E => 10, SE => 10, P => 10)
-    val, stat, time = transient_covariance_ellipsoid(MM, x0, [S, P], 2, trange, opt.Optimizer, x_scale)
-    @test val >= 0
+    ub = transient_covariance_ellipsoid(MM, x0, [S, P], 2, trange, opt.Optimizer, x_scale)
+    @test ub.value >= 0
 end
 
 @testset "Optimal Control" begin
@@ -79,7 +79,7 @@ end
     lagrange = (x[1] - x_target[1])^2 + (x[2] - x_target[2])^2/10 + (u[1] - u_target)^2/10
 
     trange = 1.0:1.0:Tf
-    MP = DiffusionProcess(x, f, σ, @set(x[1] >= 0 && x[2] >= 0))
+    MP = DiffusionProcess(x, f, σ, @set(x[1] >= 0 && x[2] >= 0), iv = t, controls = u)
     CP = ControlProcess(MP, Tf, u, t, @set(u[1] >= 0 && u[1] <= 1), LagrangeMayer(lagrange, 0*x[1]))
-    @test CP.u == u
+    @test CP.MP.controls == u
 end

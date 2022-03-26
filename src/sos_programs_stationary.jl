@@ -191,9 +191,8 @@ function stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{<:APL}, d:
     @constraint(model, [i in 1:n, j in 1:i], -2*U[n+i,j] - (i == j ? U[n+i,n+i] - r[i] : 0) == 0)
     @constraint(model, [i in 1:n], [-1, q[i], r[i]] in MOI.DualExponentialCone())
 
-	for v in vertices(P.graph)
-        flag = (v_target == v)
-        add_stationarity_constraints!(model, MP, v, P, props(P.graph, v)[:cell], w, s + (v'*S[1:n, 1:n]*v + 2*S[end,1:n]'*v))
+	for vertex in vertices(P.graph)
+        add_stationarity_constraints!(model, MP, vertex, P, props(P.graph, vertex)[:cell], w, s + (v'*S[1:n, 1:n]*v + 2*S[end,1:n]'*v))
     end
 
 	for e in edges(P.graph)
