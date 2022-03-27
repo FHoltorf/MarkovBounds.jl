@@ -131,7 +131,7 @@ function transform_state!(P::DiffusionProcess, x::AbstractVector, z::AbstractVec
     P.x = x
 end
 
-function transform_state!(P::LangevinProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.JumpProcess.x))
+function transform_state!(P::LangevinProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.DiffusionProcess.x))
     Π = P.DiffusionProcess.x => polynomial.(z)
     P.species_to_state = Dict(spec => P.species_to_state[spec](Π) for spec in keys(P.species_to_state))
     P.state_to_species = Dict(P.species_to_state[spec] => spec for spec in keys(P.species_to_state))
@@ -169,7 +169,9 @@ function rescale_state!(P::DiffusionProcess, x0::Vector{<:Real})
 end
 
 function rescale_state!(P::LangevinProcess, x0::Vector{<:Real})
-    rescale_state!(P.DiffusionProcess, x0)
+    transform_state!(P, P.DiffusionProcess.x, polynomial.(P.DiffusionProcess.x .* x0))
+    P.DiffusionProcess.f ./= x0
+    P.DiffusionProcess.σ ./= x0*x0'
 end
 
 function rescale_state!(P::JumpDiffusionProcess, x0::Vector{<:Real})

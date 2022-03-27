@@ -124,8 +124,8 @@ mutable struct LangevinProcess <: MarkovProcess
         spec2state = Dict(specs[i] => x[i] for i in 1:n)
         state2spec = Dict(x[i] => specs[i] for i in 1:n)
         props = polynomial.(reformat_reactions(reactions(rn), spec2idx, x, params))
-        drift = S'*props
-        diff = [sum(S[k,i]*S[k,j]*props[k] for k in eachindex(props)) for i in 1:n, j in 1:n]
+        drift = S*props
+        diff = [sum(S[i,k]*S[j,k]*props[k] for k in eachindex(props)) for i in 1:n, j in 1:n]
         support = intersect([@set(x[i] >= 0) for i in 1:n]...)
         return new(rn, DiffusionProcess(x,drift,diff,support), spec2idx, spec2state, state2spec)
     end
