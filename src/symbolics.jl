@@ -54,13 +54,13 @@ polynomialize_set(S::Num, vars::Dict) = polynomialize_set([S], vars)
 ## Process Constructors
 # Jump Processes
 function JumpProcess(x::T, a::Vector{Num}, h::Vector{Vector{Num}}, X = []; iv = [], controls = []) where T <: Union{Arr, Vector{Num}}
-    poly_vars = polynomialize(x, controls, iv)
+    poly_vars = polynomialize_vars(x, controls, iv)
     a = polynomialize_expr(a, poly_vars)
     h = [polynomialize_expr(hi, poly_vars) for hi in h]
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
-    poly_x = [poly_vars[state] for state in x]
+    poly_x = PV{true}[poly_vars[x[i]] for i in eachindex(x)]
     poly_iv = isempty(iv) ? PV{true}("t") : poly_vars[iv]
-    poly_controls = [poly_vars[u] for u in controls]
+    poly_controls = PV{true}[poly_vars[controls[i]] for i in eachindex(controls)]
     return JumpProcess(poly_x, a, h, X_poly; poly_vars = poly_vars, iv = poly_iv, controls = poly_controls)
 end
 

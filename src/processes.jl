@@ -32,7 +32,7 @@ mutable struct JumpProcess <: MarkovProcess
     X # state space enclosure
     iv::PV
     controls::Vector{<:PV}
-    poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
+    poly_vars::Dict # needed if process defined in terms of Symbolics.jl variables
     function JumpProcess(x::Vector{<:PV}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, X = FullSpace();
                          iv = PV{true}("t"), controls = PV{true}[], poly_vars = Dict())
         return new(x, polynomial.(a), map(p -> polynomial.(p), h), X, iv, controls, poly_vars)
