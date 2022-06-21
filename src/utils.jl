@@ -319,4 +319,4 @@ function subs_X(X::BasicSemialgebraicSet, submap)
 end
 
 inequalities(::FullSpace) = []
-polynomial(a::Real) = polynomial(Term{true}(a))
+polynomial(a::Real) = polynomial(DPTerm{true}(a))

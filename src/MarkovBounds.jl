@@ -8,18 +8,17 @@ using SumOfSquares
 @reexport using SumOfSquares: @set, SemialgebraicSets, FullSpace
 
 @reexport using DynamicPolynomials: @polyvar, PolyVar, AbstractPolynomialLike,
-                                    Polynomial, Term, subs, polynomial, differentiate,
-                                    MonomialVector, maxdegree
+                                    Polynomial, subs, polynomial, differentiate,
+                                    MonomialVector, maxdegree, polyarrayvar
+using DynamicPolynomials: Term as DPTerm
 
-# MTK/Symbolics/SymbolicUtils/Catalyst can also be used to specify moment problem
-# data but not as its main approach
 using Catalyst: @reaction_network, @parameters, species, speciesmap,
                 reactions, paramsmap, prodstoichmat, substoichmat,
                 ReactionSystem, Reaction
 
-using Symbolics: Num, expand
-using SymbolicUtils: Add, Mul, Pow, Sym, arguments
-using LightGraphs: edges, vertices, SimpleGraph, add_edge!, add_vertex!, Edge
+using Symbolics: Num, expand, Arr, ArrayShapeCtx
+using SymbolicUtils: Pow, Mul, Add, Sym, Term, arguments
+using Graphs: edges, vertices, SimpleGraph, add_edge!, add_vertex!, Edge
 using MetaGraphs: MetaGraph, MetaDiGraph, props, set_prop!
 
 import LinearAlgebra: qr, nullspace, diag, Diagonal, tr, transpose
