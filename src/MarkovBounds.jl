@@ -5,7 +5,7 @@ using SumOfSquares
 
 # SumOfSquares and DynamicPolynomials are the main modeling tools to set up
 # moment bounding problems --> Reexport those
-@reexport using SumOfSquares: @set, SemialgebraicSets, FullSpace
+@reexport using SumOfSquares
 
 @reexport using DynamicPolynomials: @polyvar, PolyVar, AbstractPolynomialLike,
                                     Polynomial, subs, polynomial, differentiate,
