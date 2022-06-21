@@ -34,7 +34,7 @@ const APL = AbstractPolynomialLike
 include("distributed.jl")
 include("processes.jl")
 include("symbolics.jl")
-include("print_wrapper.jl")
+include("print_routines.jl")
 include("utils.jl")
 include("problem_setup.jl")
 include("sos_programs_stationary.jl")
