@@ -96,7 +96,7 @@ function JumpDiffusionProcess(x::T, a::Vector{Num}, h::Vector{Vector{Num}}, f::V
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
     poly_x = [poly_vars[x[i]] for i in eachindex(x)]
     poly_iv = isempty(iv) ? PV{true}("t") : poly_vars[iv]
-    poly_controls = [poly_vars[u[i]] for i in eachindex(controls)]
+    poly_controls = PV{true}[poly_vars[controls[i]] for i in eachindex(controls)]
     return JumpDiffusionProcess(poly_x, a, h, f, σ, X_poly, poly_vars = poly_vars, iv = poly_iv, controls = poly_controls)
 end
 
