@@ -23,8 +23,8 @@ function transient_pop(MP::MarkovProcess, μ0::Dict, p::APL, d::Int,
 
     model = SOSModel(solver)
     w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
-                    @variable(model, [1], Poly(monomials(t, 0:d)))[1] :
-                    @variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+                    @variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
+                    @variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
 
     for v in vertices(P.graph)
         add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], T, Δt, w, 0)
@@ -148,8 +148,8 @@ function transient_variance(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange
 	
 	model = SOSModel(solver)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
-                    @variable(model, [1], Poly(monomials(t, 0:d)))[1] :
-                    @variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+                    @variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
+                    @variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
 	@variable(model, S[1:2])
 	@constraint(model, [1 S[1]; S[1] S[2]] in PSDCone())
 
@@ -223,8 +223,8 @@ function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, p::Vector{
 
 	model = SOSModel(solver)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
-                    @variable(model, [1], Poly(monomials(t, 0:d)))[1] :
-                    @variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+                    @variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
+                    @variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
 	@variable(model, S[1:n+1,1:n+1], PSD)
  	@variable(model, U[1:2n,1:2n], PSD)
  	@variable(model, r[1:n])
@@ -306,8 +306,8 @@ function transient_indicator(MP::MarkovProcess, μ0::Dict, v_target::AbstractArr
 
 	model = SOSModel(solver)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
-						@variable(model, [1], Poly(monomials(t, 0:d)))[1] :
-						@variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+						@variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
+						@variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
 
 	for v in vertices(P.graph)
 		add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], T, Δt, w, 0)
@@ -340,8 +340,8 @@ function approximate_transient_measure(MP::MarkovProcess, μ0::Dict, p::APL, d::
 
 	model = SOSModel(solver)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
-						@variable(model, [1], Poly(monomials(t, 0:d)))[1] :
-						@variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+						@variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
+						@variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
 
 	for v in vertices(P.graph)
 		add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], T, Δt, w, 0)
@@ -387,8 +387,8 @@ function max_entropy_measure(MP::MarkovProcess, μ0::Dict, d::Int, trange::Abstr
 
 	model = SOSModel(solver)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
-						@variable(model, [1], Poly(monomials(t, 0:d)))[1] :
-						@variable(model, [1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+						@variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
+						@variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
 
 	for v in vertices(P.graph)
 		add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], T, Δt, w, 0)

@@ -12,7 +12,7 @@ function stationary_pop(MP::MarkovProcess, p::APL, order::Int, solver, P::Partit
     @variable(model, s)
     w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                    @variable(model) :
-                   @variable(model, [1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
+                   @variable(model, [1:1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
 
     for v in vertices(P.graph)
         add_stationarity_constraints!(model, MP, v, P, props(P.graph, v)[:cell], w, s-p)
@@ -108,7 +108,7 @@ function stationary_variance(MP::MarkovProcess, p::APL, d::Int, solver, P::Parti
     model = SOSModel(solver)
 	w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                    @variable(model) :
-                   @variable(model, [1], Poly(monomials(MP.x, 0:d)))[1]) for v in vertices(P.graph))
+                   @variable(model, [1:1], Poly(monomials(MP.x, 0:d)))[1]) for v in vertices(P.graph))
     @variable(model, s)
     @variable(model, S[1:2])
     @constraint(model, [1 S[1]; S[1] S[2]] in PSDCone())
@@ -180,7 +180,7 @@ function stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{<:APL}, d:
     model = SOSModel(solver)
 	w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                    @variable(model) :
-                   @variable(model, [1], Poly(monomials(MP.x, 0:d)))[1]) for v in vertices(P.graph))
+                   @variable(model, [1:1], Poly(monomials(MP.x, 0:d)))[1]) for v in vertices(P.graph))
     @variable(model, s)
     @variable(model, S[1:n+1, 1:n+1], PSD)
     @variable(model, U[1:2*n, 1:2*n], PSD)
@@ -294,7 +294,7 @@ function stationary_indicator(MP::MarkovProcess, v_target::AbstractVector{Int}, 
     @variable(model, s)
     w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                    @variable(model) :
-                   @variable(model, [1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
+                   @variable(model, [1:1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
     cons = Dict()
     for v in vertices(P.graph)
         flag = (v in v_target)
@@ -323,7 +323,7 @@ function approximate_stationary_measure(MP::MarkovProcess, v::APL, order::Int, s
     @variable(model, s)
     w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model) :
-                    @variable(model, [1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
+                    @variable(model, [1:1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
     ineqs = inequalities(side_infos)
     eqs = equalities(side_infos)
     if !isempty(ineqs)
@@ -378,7 +378,7 @@ function max_entropy_measure(MP::MarkovProcess, order::Int, solver, P::Partition
     model = SOSModel(solver)
     w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                    @variable(model) :
-                   @variable(model, [1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
+                   @variable(model, [1:1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
     @variable(model, u[vertices(P.graph)])
     @variable(model, q[vertices(P.graph)])
     @variable(model, s)
