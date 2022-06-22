@@ -39,6 +39,8 @@ function stationary_polynomial(MP::MarkovProcess, v::APL, d::Int, solver, P::Par
     return Bound(objective_value(model), model, P, Dict(key => value(w[key]) for key in keys(w)))
 end
 
+stationary_polynomial(RP::ReactionProcess, v::Num, d::Int, solver, P::Partition = trivial_partition(RP.JumpProcess.X)) = stationary_polynomial(RP.JumpProcess, polynomialize_expr(v, RP.species_to_state), d, solver, P)
+stationary_polynomial(LP::LangevinProcess, v::Num, d::Int, solver, P::Partition = trivial_partition(LP.DiffusionProcess.X)) = stationary_polynomial(LP.DiffusionProcess, polynomialize_expr(v, LP.species_to_state), d, solver, P)
 stationary_polynomial(MP::MarkovProcess, v::Num, d::Int, solver, P::Partition = trivial_partition(MP.X)) = stationary_polynomial(MP, polynomialize_expr(v, MP.poly_vars), d, solver, P)
 
 """
@@ -126,8 +128,9 @@ function stationary_variance(MP::MarkovProcess, p::APL, d::Int, solver, P::Parti
     return Bound(-objective_value(model), model, P, Dict(key => value(w[key]) for key in keys(w)))
 end
 
-stationary_variance(RP::ReactionProcess, x, d::Int, solver, P::Partition = trivial_partition(RP.JumpProcess.X)) = stationary_variance(RP.JumpProcess, RP.species_to_state[x], d, solver, P)
-stationary_variance(MP::MarkovProcess, x::Num, d::Int, solver, P::Partition = trivial_partition(MP.X)) = stationary_variance(MP, polynomialize_expr(x, MP.poly_vars), d, solver, P)
+stationary_variance(RP::ReactionProcess, v, d::Int, solver, P::Partition = trivial_partition(RP.JumpProcess.X)) = stationary_variance(RP.JumpProcess, polynomialize_expr(v, RP.species_to_state), d, solver, P)
+stationary_variance(LP::LangevinProcess, v, d::Int, solver, P::Partition = trivial_partition(LP.DiffusionProcess.X)) = stationary_variance(LP.DiffusionProcess, polynomialize_expr(v, LP.species_to_state), d, solver, P)
+stationary_variance(MP::MarkovProcess, v::Num, d::Int, solver, P::Partition = trivial_partition(MP.X)) = stationary_variance(MP, polynomialize_expr(v, MP.poly_vars), d, solver, P)
 
 """
 	stationary_variance(rn::ReactionSystem, S0, x, d::Int, solver,
