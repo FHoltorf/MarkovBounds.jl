@@ -195,6 +195,10 @@ mutable struct ControlProcess
     TerminalChanceConstraints
     discount_factor
     function ControlProcess(MP::MarkovProcess, T::Real, U, obj, PCs = [], TCs = [], dis_fac = 0)
+        @assert dis_fac >= 0 "Discount factor must be non-negative."
+        if isinf(T)
+            @assert dis_fac > 0 "Exponential discounting is required for infinite horizon control problems"
+        end
         return new(MP, T, U, obj, PCs, TCs, dis_fac)
     end
 end
