@@ -289,9 +289,9 @@ end
 function split_state_space(MP::MarkovProcess, X::BasicSemialgebraicSet)
     Xc = complement(X, MP.X)
     G = MetaDiGraph()
-    add_vertex!(G, 1, :cell, X)
-    add_vertex!(G, 2, :cell, Xc)
-    add_edge!(G, 1, 2, ∂(X))
+    add_vertex!(G, :cell, X)
+    add_vertex!(G, :cell, Xc)
+    add_edge!(G, 1, 2, :interface, ∂(X))
     return Partition(G, x -> check_membership(x, X) ? 1 : 2)
 end
 
