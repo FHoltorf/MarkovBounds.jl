@@ -1,5 +1,5 @@
 export reaction_process_setup, langevin_process_setup, stoich_bounds, transform_state!, rescale_state!,
-       value_function
+       value_function, init_moments
 
 stoichmat(rn::ReactionSystem) = prodstoichmat(rn) - substoichmat(rn)
 
