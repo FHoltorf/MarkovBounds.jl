@@ -22,12 +22,15 @@ function optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstract
 		trange = trange[1:end-1]
 	end
 	if isinf(CP.T)
-		model, w = infinite_horizon_control(CP, μ0, d, trange, solver, P)
+		model, w, w∞ = infinite_horizon_control(CP, μ0, d, trange, solver, P)
+		optimize!(model)
+		bound = Bound(objective_value(model), model, P, merge(dual_poly(w, CP.MP.iv, trange), dual_poly(w∞)))
 	else
 		model, w = finite_horizon_control(CP, μ0, d, trange, solver, P)
+		optimize!(model)
+		bound = Bound(objective_value(model), model, P, dual_poly(w, CP.MP.iv, trange))
 	end
-	optimize!(model)
-	return Bound(objective_value(model), model, P, dual_poly(w, CP.MP.iv, trange))
+	return bound
 end
 
 ## Finite horizon control problems
@@ -198,8 +201,7 @@ function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange:
 		trange = trange[2:end]
 	end
 	model, w, w∞ = infinite_horizon_LM(CP, μ0, d, trange, solver, P)
-	optimize!(model)
-	return Bound(objective_value(model), model, P, merge(dual_poly(w, CP.MP.iv, trange), dual_poly(w∞)))
+	return model, w, w∞
 end
 
 function infinite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector, solver, P::Partition = trivial_partition(CP.MP.X))
