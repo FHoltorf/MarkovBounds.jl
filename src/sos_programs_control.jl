@@ -33,6 +33,10 @@ function optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstract
 	return bound
 end
 
+function optimal_control(CP::ControlProcess, x0::Vector, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
+	return optimal_control(CP, init_moments(CP.MP.x,x0,d), d, trange, solver, P)
+end
+
 ## Finite horizon control problems
 function finite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
 	if isa(CP.Objective, LagrangeMayer)
