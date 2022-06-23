@@ -17,17 +17,35 @@ struct Partition
 end
 
 function grid_graph(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor = zeros(Int64, length(lb)))
-    @assert all(lb .<= ub)
-
+    @assert all(lb .<= ub) "lower boundary must be smaller than upper boundary"
+    @assert all(n .>= 1) "minimum one partition element per dimension required"
     x_ranges = []
     for k in 1:length(n)
-        n_eff = n[k] - inf_top[k] - inf_floor[k]
+        n_eff = n[k] - inf_top[k] - inf_floor[k] # number of partition elements between lb[k] and ub[k]
         if n_eff < 0
+            @warn "number of partition elements in dimension $k is inconsistent with (semi-)infinite domain; dimension ignored for partitioning!"
             push!(x_ranges, [inf_floor[k] == 0 ? lb[k] : -Inf, (inf_top[k] == 0 ? ub[k] : Inf)])
-        elseif n_eff == 0
-            push!(x_ranges, [inf_floor[k] == 0 ? lb[k] : -Inf, (lb[k] + ub[k])/2, (inf_top[k] == 0 ? ub[k] : Inf)])
+        elseif n_eff == 0 
+            if inf_floor[k] + inf_top[k] == 1
+                push!(x_ranges, [inf_floor[k] == 0 ? lb[k] : -Inf, (inf_top[k] == 0 ? ub[k] : Inf)])
+            else 
+                if lb[k] != ub[k] 
+                    @warn "If 2 partition elements are specified on infinite domain, \n resolved range [a,b] must be a singleton (a=b) for consistency. The partition then reads [-Inf, a, Inf]. \n 
+                           Here the resolved range does not satisfy this requirement. Proceed with partition [-Inf, (a+b)/2, Inf]."
+                end
+                mid_point = (lb[k] + ub[k])/2
+                push!(x_ranges, [-Inf, mid_point, Inf])
+            end
         else
-            push!(x_ranges, [inf_floor[k] == 0 ? lb[k] : -Inf, range(lb[k], stop=ub[k], length=n_eff)..., (inf_top[k] == 0 ? ub[k] : Inf)])
+            boundaries = Float64[]
+            if inf_floor[k] == 1
+                push!(boundaries, -Inf)
+            end
+            boundaries = vcat(boundaries, collect(range(lb[k], stop=ub[k], length=n_eff+1)))
+            if inf_top[k] == 1
+                push!(boundaries, Inf)
+            end
+            push!(x_ranges, boundaries)
         end
     end
     return grid_graph(x, x_ranges)
