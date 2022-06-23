@@ -318,5 +318,15 @@ function subs_X(X::BasicSemialgebraicSet, submap)
     return BasicSemialgebraicSet(algebraicset(eqs), ineqs)
 end
 
+function reverse_jumps(jumps)
+    rev_jumps = deepcopy(jumps)
+    for j in rev_jumps
+        for e in j 
+            e.a[end] = length(e.a) > 1 ? -1*e.a[end] : e.a[end]
+        end
+    end
+    return rev_jumps
+end
+
 inequalities(::FullSpace) = []
 polynomial(a::Real) = polynomial(DPTerm{true}(a))
