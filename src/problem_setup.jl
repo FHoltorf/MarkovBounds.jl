@@ -107,11 +107,11 @@ end
 
 # terminal cost transversality constraints
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Singleton, w, rhs::Real, v::Int)
-    model.obj_dict[Symbol("transversality_$v")] = @constraint(model, subs(w, MP.iv => 1) <= rhs, base_name = "transversality_$v")
+    model.obj_dict[Symbol("transversality_$v")] = @constraint(model, w(MP.iv => 1) <= rhs, base_name = "transversality_$v")
 end
 
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Singleton, w, rhs::APL, v::Int)
-    model.obj_dict[Symbol("transversality_$v")] = @constraint(model, subs(w, MP.iv => 1) <= subs(rhs, MP.x => space_domain.x), base_name = "transversality_$v")
+    model.obj_dict[Symbol("transversality_$v")] = @constraint(model, w(MP.iv => 1) <= rhs(MP.x => space_domain.x), base_name = "transversality_$v")
 end
 
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::AbstractSemialgebraicSet, w, rhs, v::Int)
@@ -119,7 +119,7 @@ function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_
 end
 
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Singleton, w, rhs, v::Int)
-    model.obj_dict[Symbol("transversality_$v")] = @constraint(model, subs(w, MP.iv => 1) <= rhs, base_name = "transversality_$v")
+    model.obj_dict[Symbol("transversality_$v")] = @constraint(model, w(MP.iv => 1) <= rhs, base_name = "transversality_$v")
 end
 
 function add_transversality_constraints!(model::Model, MP::MarkovProcess, space_domain::Vector{<:AbstractSemialgebraicSet}, w, rhs, v::Int)
