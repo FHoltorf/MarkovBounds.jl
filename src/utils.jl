@@ -318,10 +318,12 @@ function subs_X(X::BasicSemialgebraicSet, submap)
     return BasicSemialgebraicSet(algebraicset(eqs), ineqs)
 end
 
+# applies only for constant jumps
 function reverse_jumps(jumps)
     rev_jumps = deepcopy(jumps)
     for j in rev_jumps
         for e in j 
+            @assert (maxdegree(e) <= 1 && e.a[1] == 1) "jump reversal currently only supported for constant jumps"
             e.a[end] = length(e.a) > 1 ? -1*e.a[end] : e.a[end]
         end
     end
