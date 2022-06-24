@@ -20,6 +20,7 @@ using Symbolics: Num, expand, Arr, ArrayShapeCtx
 using SymbolicUtils: Pow, Mul, Add, Sym, Term, arguments
 using Graphs: edges, vertices, SimpleGraph, add_edge!, add_vertex!, Edge
 using MetaGraphs: MetaGraph, MetaDiGraph, props, set_prop!
+using Base.Iterators: product
 
 import LinearAlgebra: qr, nullspace, diag, Diagonal, tr, transpose
 import Base: show
@@ -35,6 +36,7 @@ include("processes.jl")
 include("symbolics.jl")
 include("print_routines.jl")
 include("utils.jl")
+include("distributed_utils.jl")
 include("problem_setup.jl")
 include("sos_programs_stationary.jl")
 include("sos_programs_transient.jl")
