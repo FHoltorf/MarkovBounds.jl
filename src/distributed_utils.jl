@@ -1,4 +1,4 @@
-export grid_graph, discrete_grid_graph, props
+export grid_graph, grid_partition, discrete_grid_graph, discrete_grid_partition, props
 
 function grid_graph(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor = zeros(Int64, length(lb)))
     @assert all(lb .<= ub) "lower boundary must be smaller than upper boundary"
@@ -81,6 +81,15 @@ function grid_graph(x, x_ranges)
     return mg, get_vertex
 end
 
+
+function grid_partition(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor = zeros(Int64, length(lb)))
+    return Partition(grid_graph(x, lb, ub, n; inf_top = inf_top, inf_floor = inf_floor)...)
+end
+
+function grid_partition(x, x_ranges)
+    return Partition(grid_graph(x, x_ranges)...)
+end
+
 function check_membership(X::AbstractSemialgebraicSet, x_var, x)
     is_member = check_membership(X.V, x_var, x)
     if is_member
@@ -155,6 +164,9 @@ function discrete_grid_graph(JP::JumpProcess, x_ranges, Xc)
     return partition_graph, get_vertex
 end
 
+function discrete_grid_partition(JP::JumpProcess, x_ranges, Xc)
+    return Partition(discrete_grid_graph(JP, x_ranges, Xc)...)
+end
 
 function neighborhood(state, JP::JumpProcess, state_to_vertex)
     x_var = JP.x
