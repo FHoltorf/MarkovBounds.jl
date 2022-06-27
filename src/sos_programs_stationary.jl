@@ -1,4 +1,7 @@
-export stationary_polynomial, stationary_mean, stationary_variance, stationary_covariance_ellipsoid, max_entropy_measure
+export stationary_polynomial, stationary_mean, 
+       stationary_variance, stationary_covariance_ellipsoid, 
+       max_entropy_measure, approximate_stationary_measure,
+       stationary_probability_mass
 
 """
 	stationary_pop(MP::MarkovProcess, v::APL, d::Int, solver)
