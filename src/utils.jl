@@ -318,6 +318,10 @@ function subs_X(X::BasicSemialgebraicSet, submap)
     return BasicSemialgebraicSet(algebraicset(eqs), ineqs)
 end
 
+function subs_X(X::FullSpace, submap)
+    return X
+end
+
 # applies only for constant jumps
 function reverse_jumps(jumps)
     rev_jumps = deepcopy(jumps)
