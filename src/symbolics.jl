@@ -1,5 +1,5 @@
-polynomialize_vars(vars::AbstractArray) = Dict(v.val => PolyVar{true}(name(v.val)) for v in vars)
-polynomialize_vars(var) = Dict(var.val => PolyVar{true}(name(v.val)))
+polynomialize_vars(vars::AbstractArray) = Dict(v.val => PolyVar{true}(_name(v.val)) for v in vars)
+polynomialize_vars(var) = Dict(var.val => PolyVar{true}(_name(v.val)))
 function polynomialize_vars(x::Arr)  
     x_dp = polyarrayvar(PolyVar{true}, x.value.name, x.value.metadata[ArrayShapeCtx]...)
     return Dict(x[i].val => x_dp[i] for i in 1:length(x_dp))
@@ -11,8 +11,8 @@ function polynomialize_vars(vars_args...)
     end
     return var_to_poly
 end
-name(v::Sym) = string(v.name)
-name(v::Term) = string(v.arguments[1], "[", [string(arg,",") for arg in v.arguments[2:end]]..., "]")
+_name(v::Sym) = string(v.name)
+_name(v::Term) = string(v.arguments[1], "[", [string(arg,",") for arg in v.arguments[2:end]]..., "]")
 
 # need to find a better check if expression has been expanded. 
 # Here we assume that every expression will be supplied as Num.
