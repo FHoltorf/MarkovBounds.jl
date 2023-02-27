@@ -24,8 +24,7 @@ Parameters = "0.12"
 Reexport = "1"
 SumOfSquares = "0.6"
 SymbolicUtils = "0.19"
-Symbolics = "4.3"
-julia = "1.6"
+julia = "1.7"
 
 [extras]
 COSMO = "1e616198-aa4e-51ec-90a2-23f7fbd31d8d"
