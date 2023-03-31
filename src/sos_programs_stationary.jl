@@ -10,8 +10,11 @@ returns SOS program of degree `d` for compuitation of a **lower** bound
 on the expecation of a polynomial observable ``v(x)`` at steady state of the
 Markov process `MP`.
 """
-function stationary_pop(MP::MarkovProcess, p::APL, order::Int, solver, P::Partition = trivial_partition(MP.X))
+function stationary_pop(MP::MarkovProcess, p::APL, order::Int, solver,
+                        P::Partition = trivial_partition(MP.X);
+                        inner_approx = SOSCone)
     model = SOSModel(solver)
+    PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
     @variable(model, s)
     w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                    @variable(model) :
@@ -36,8 +39,10 @@ at steady state of the Markov process `MP`. The bound is computed based on an
 SOS program over a polynomial of degree at most `d`; the bounds can be
 tightened by increasing `d`. The program is solved with `solver`.
 """
-function stationary_polynomial(MP::MarkovProcess, v::APL, d::Int, solver, P::Partition = trivial_partition(MP.X))
-    model, w = stationary_pop(MP, v, d, solver, P)
+function stationary_polynomial(MP::MarkovProcess, v::APL, d::Int, solver, 
+                               P::Partition = trivial_partition(MP.X);
+                               inner_approx = SOSCone)
+    model, w = stationary_pop(MP, v, d, solver, P, inner_approx=inner_approx)
     optimize!(model)
     return Bound(objective_value(model), model, P, Dict(key => value(w[key]) for key in keys(w)))
 end
@@ -54,16 +59,24 @@ the Markov process `MP`. Bounds are computed based on SOS programs over a
 polynomial of degree at most `d`; the bounds can be tightened by increasing
 `d`. The program is solved with `solver`.
 """
-function stationary_mean(MP::MarkovProcess, v::APL, d::Int, solver, P::Partition = trivial_partition(MP.X))
-    lb = stationary_polynomial(MP, v, d, solver, P)
-    ub = stationary_polynomial(MP, -v, d, solver, P)
+function stationary_mean(MP::MarkovProcess, v::APL, d::Int, solver,
+                         P::Partition = trivial_partition(MP.X);
+                         inner_approx = SOSCone)
+    lb = stationary_polynomial(MP, v, d, solver, P, inner_approx=inner_approx)
+    ub = stationary_polynomial(MP, -v, d, solver, P, inner_approx=inner_approx)
 	ub.value *= -1
     return lb, ub
 end
 
-stationary_mean(RP::ReactionProcess, S, d::Int, solver, P::Partition = trivial_partition(RP.JumpProcess.X)) = stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver, P)
-stationary_mean(LP::LangevinProcess, S, d::Int, solver, P::Partition = trivial_partition(LP.DiffusionProcess.X)) = stationary_mean(LP.DiffusionProcess, LP.species_to_state[S], d, solver, P)
-stationary_mean(MP::MarkovProcess, v::Num, d::Int, solver, P::Partition = trivial_partition(MP.X)) = stationary_mean(MP, polynomialize_expr(v, MP.poly_vars), d, solver, P)
+stationary_mean(RP::ReactionProcess, S, d::Int, solver, 
+                P::Partition = trivial_partition(RP.JumpProcess.X);
+                inner_approx = SOSCone) = stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver, P, inner_approx=inner_approx)
+stationary_mean(LP::LangevinProcess, S, d::Int, solver, 
+                P::Partition = trivial_partition(LP.DiffusionProcess.X);
+                inner_approx = SOSCone) = stationary_mean(LP.DiffusionProcess, LP.species_to_state[S], d, solver, P, inner_approx=inner_approx)
+stationary_mean(MP::MarkovProcess, v::Num, d::Int, solver, 
+                P::Partition = trivial_partition(MP.X);
+                inner_approx = SOSCone) = stationary_mean(MP, polynomialize_expr(v, MP.poly_vars), d, solver, P, inner_approx=inner_approx)
 
 """
 	stationary_mean(rn::ReactionSystem, S0::Dict, S, d::Int, solver,
@@ -89,16 +102,16 @@ unknown or irrelevant, simply call
 """
 function stationary_mean(rn::ReactionSystem, S0::Dict, S, d::Int, solver,
 	 					 scales = Dict(s => 1 for s in species(rn));
-						 params::Dict = Dict(), auto_scaling = false)
+						 params::Dict = Dict(), auto_scaling = false, inner_approx = SOSCone)
 	RP, S0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
- 	return stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver)
+ 	return stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver, inner_approx=inner_approx)
 end
 
 function stationary_mean(rn::ReactionSystem, S, d::Int, solver,
 					     scales = Dict(s => 1 for s in species(rn));
-						 params::Dict = Dict())
+						 params::Dict = Dict(), inner_approx = SOSCone)
 	RP = reaction_process_setup(rn, scales = scales, params = params)
-	return stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver)
+	return stationary_mean(RP.JumpProcess, RP.species_to_state[S], d, solver, inner_approx=inner_approx)
 end
 
 
@@ -109,8 +122,11 @@ returns SOS program of degree `d` for computation of an **upper** bound on the
 variance of a polynomial observables `v` at steady state of the Markov process
 `MP`.
 """
-function stationary_variance(MP::MarkovProcess, p::APL, d::Int, solver, P::Partition = trivial_partition(MP.X))
+function stationary_variance(MP::MarkovProcess, p::APL, d::Int, solver, 
+                             P::Partition = trivial_partition(MP.X);
+                             inner_approx = SOSCone)
     model = SOSModel(solver)
+    PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
 	w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                    @variable(model) :
                    @variable(model, [1:1], Poly(monomials(MP.x, 0:d)))[1]) for v in vertices(P.graph))
@@ -131,9 +147,15 @@ function stationary_variance(MP::MarkovProcess, p::APL, d::Int, solver, P::Parti
     return Bound(-objective_value(model), model, P, Dict(key => value(w[key]) for key in keys(w)))
 end
 
-stationary_variance(RP::ReactionProcess, v, d::Int, solver, P::Partition = trivial_partition(RP.JumpProcess.X)) = stationary_variance(RP.JumpProcess, polynomialize_expr(v, RP.species_to_state), d, solver, P)
-stationary_variance(LP::LangevinProcess, v, d::Int, solver, P::Partition = trivial_partition(LP.DiffusionProcess.X)) = stationary_variance(LP.DiffusionProcess, polynomialize_expr(v, LP.species_to_state), d, solver, P)
-stationary_variance(MP::MarkovProcess, v::Num, d::Int, solver, P::Partition = trivial_partition(MP.X)) = stationary_variance(MP, polynomialize_expr(v, MP.poly_vars), d, solver, P)
+stationary_variance(RP::ReactionProcess, v, d::Int, solver, 
+                    P::Partition = trivial_partition(RP.JumpProcess.X);
+                    inner_approx = SOSCone) = stationary_variance(RP.JumpProcess, polynomialize_expr(v, RP.species_to_state), d, solver, P, inner_approx=inner_approx)
+stationary_variance(LP::LangevinProcess, v, d::Int, solver, 
+                    P::Partition = trivial_partition(LP.DiffusionProcess.X);
+                    inner_approx = SOSCone) = stationary_variance(LP.DiffusionProcess, polynomialize_expr(v, LP.species_to_state), d, solver, P, inner_approx=inner_approx)
+stationary_variance(MP::MarkovProcess, v::Num, d::Int, solver, 
+                    P::Partition = trivial_partition(MP.X);
+                    inner_approx = SOSCone) = stationary_variance(MP, polynomialize_expr(v, MP.poly_vars), d, solver, P, inner_approx=inner_approx)
 
 """
 	stationary_variance(rn::ReactionSystem, S0, x, d::Int, solver,
@@ -159,16 +181,17 @@ unknown or irrelevant, simply call
 """
 function stationary_variance(rn::ReactionSystem, S0, S, d::Int, solver,
 	 						 scales = Dict(s => 1 for s in species(rn));
-							 auto_scaling = false, params::Dict = Dict())
+							 auto_scaling = false, params::Dict = Dict(),
+                             inner_approx = SOSCone)
 	RP, S0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
- 	return stationary_variance(RP.JumpProcess, RP.species_to_state[S], d, solver)
+ 	return stationary_variance(RP.JumpProcess, RP.species_to_state[S], d, solver, inner_approx=inner_approx)
 end
 
 function stationary_variance(rn::ReactionSystem, S, d::Int, solver,
 							 scales = Dict(s => 1 for s in species(rn));
-							 params::Dict = Dict())
+							 params::Dict = Dict(), inner_approx = SOSCone)
 	RP = reaction_process_setup(rn, scales = scales, params = params)
-	return stationary_variance(RP.JumpProcess, RP.species_to_state[S], d, solver)
+	return stationary_variance(RP.JumpProcess, RP.species_to_state[S], d, solver, inner_approx=inner_approx)
 end
 
 @doc raw"""
@@ -181,9 +204,12 @@ The bounds are computed via an SOS program of degree `d`, hence can be tightened
 by increasing `d`. This computation requires a `solver` that can handle
 exponential cone constraints.
 """
-function stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{<:APL}, d::Int, solver, P::Partition = trivial_partition(MP.X))
+function stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{<:APL}, d::Int, solver, 
+                                         P::Partition = trivial_partition(MP.X);
+                                         inner_approx = SOSCone)
     n = length(v)
     model = SOSModel(solver)
+    PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
 	w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                    @variable(model) :
                    @variable(model, [1:1], Poly(monomials(MP.x, 0:d)))[1]) for v in vertices(P.graph))
@@ -210,10 +236,12 @@ function stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{<:APL}, d:
     return Bound(exp(-objective_value(model)), model, P, Dict(key => value(w[key]) for key in keys(w)))
 end
 
-stationary_covariance_ellipsoid(RP::ReactionProcess, v::Vector, d::Int, solver, P::Partition = trivial_partition(RP.JumpProcess.X)) =
-								stationary_variance(RP.JumpProcess, [RP.species_to_state[x] for x in v], d, solver, P)
-stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{Num}, d::Int, solver, P::Partition = trivial_partition(MP.X)) =
-								stationary_variance(MP, polynomialize_expr(v, MP.poly_vars), d, solver, P)
+stationary_covariance_ellipsoid(RP::ReactionProcess, v::Vector, d::Int, solver, 
+                                P::Partition = trivial_partition(RP.JumpProcess.X);
+                                inner_approx = SOSCone) = stationary_variance(RP.JumpProcess, [RP.species_to_state[x] for x in v], d, solver, P, inner_approx=inner_approx)
+stationary_covariance_ellipsoid(MP::MarkovProcess, v::Vector{Num}, d::Int, solver, 
+                                P::Partition = trivial_partition(MP.X);
+                                inner_approx = SOSCone) = stationary_variance(MP, polynomialize_expr(v, MP.poly_vars), d, solver, P, inner_approx=inner_approx)
 
 @doc raw"""
 	stationary_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, solver,
@@ -242,16 +270,17 @@ unknown or irrelevant, simply call
 """
 function stationary_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, solver,
 	 									 scales = Dict(s => 1 for s in species(rn));
-										 auto_scaling = false, params::Dict = Dict())
+										 auto_scaling = false, params::Dict = Dict(),
+                                         inner_approx = SOSCone)
 	RP, x0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
- 	return stationary_covariance_ellipsoid(RP.JumpProcess, [RP.species_to_state[x] for x in S], d, solver)
+ 	return stationary_covariance_ellipsoid(RP.JumpProcess, [RP.species_to_state[x] for x in S], d, solver, inner_approx=inner_approx)
 end
 
 function stationary_covariance_ellipsoid(rn::ReactionSystem, S::Vector, d::Int, solver,
 	 									 scales = Dict(s => 1 for s in species(rn));
-										 params::Dict = Dict())
+										 params::Dict = Dict(), inner_approx = SOSCone)
 	RP = reaction_process_setup(rn, scales = scales, params = params)
-	return stationary_covariance_ellipsoid(RP.JumpProcess, [RP.species_to_state[x] for x in S], d, solver)
+	return stationary_covariance_ellipsoid(RP.JumpProcess, [RP.species_to_state[x] for x in S], d, solver, inner_approx=inner_approx)
 end
 
 """
@@ -272,31 +301,37 @@ of said partition. Then, one should call
                                  P::Partition)
 where `v` refers to the vertex of the partition graph that corresponds to the set `X`. 
 """
-function stationary_probability_mass(MP::MarkovProcess, X::BasicSemialgebraicSet, d::Int, solver)
+function stationary_probability_mass(MP::MarkovProcess, X::BasicSemialgebraicSet, d::Int, solver;
+                                     inner_approx = SOSCone)
 	P = split_state_space(MP, X)
- 	return stationary_probability_mass(MP, [1], d, solver, P)
+ 	return stationary_probability_mass(MP, [1], d, solver, P, inner_approx=inner_approx)
 end
 
-function stationary_probability_mass(MP::MarkovProcess, v::Int, order::Int, solver, P::Partition)
-	return stationary_probability_mass(MP, [v], order, solver, P)
+function stationary_probability_mass(MP::MarkovProcess, v::Int, order::Int, solver, P::Partition;
+                                     inner_approx = SOSCone)
+	return stationary_probability_mass(MP, [v], order, solver, P, inner_approx=inner_approx)
 end
 
-function stationary_probability_mass(MP::MarkovProcess, v::AbstractVector{Int}, order::Int, solver, P::Partition)
-	model, w = stationary_indicator(MP, v, order, P, solver; sense = 1) # Max
+function stationary_probability_mass(MP::MarkovProcess, v::AbstractVector{Int}, order::Int, solver, P::Partition;
+                                     inner_approx = SOSCone)
+	model, w = stationary_indicator(MP, v, order, P, solver; sense = 1, inner_approx = inner_approx) # Max
 	optimize!(model)
 	ub = Bound(-objective_value(model), model, P, Dict(v => value(w[v]) for v in vertices(P.graph)))
-	model, w = stationary_indicator(MP, v, order, P, solver; sense = -1) # Min
+	model, w = stationary_indicator(MP, v, order, P, solver; sense = -1, inner_approx = inner_approx) # Min
 	optimize!(model)
 	lb = Bound(objective_value(model), model, P, Dict(v => value(w[v]) for v in vertices(P.graph)))
  	return lb, ub
 end
 
-function stationary_indicator(MP::MarkovProcess, v_target::Int, order::Int, P::Partition, solver; sense = 1)
-    return stationary_indicator(MP, [v_target], order, P, solver, sense = sense)
+function stationary_indicator(MP::MarkovProcess, v_target::Int, order::Int, P::Partition, solver;
+                              sense = 1, inner_approx = SOSCone)
+    return stationary_indicator(MP, [v_target], order, P, solver, sense = sense, inner_approx=inner_approx)
 end
 
-function stationary_indicator(MP::MarkovProcess, v_target::AbstractVector{Int}, order::Int, P::Partition, solver; sense = 1)
+function stationary_indicator(MP::MarkovProcess, v_target::AbstractVector{Int}, order::Int, P::Partition, solver; 
+                              sense = 1, inner_approx = SOSCone)
     model = SOSModel(solver)
+    PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
     @variable(model, s)
     w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                    @variable(model) :
@@ -324,8 +359,9 @@ returns approximate values for the stationary measure on the partition `P`.
 The choice of `v` shall be understood as means to regularize the problem. 
 """
 function approximate_stationary_measure(MP::MarkovProcess, v::APL, order::Int, solver, P::Partition,
-                                        side_infos = FullSpace())
+                                        side_infos = FullSpace(); inner_approx = SOSCone)
     model = SOSModel(solver)
+    PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
     @variable(model, s)
     w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model) :
@@ -380,8 +416,9 @@ end
 returns approximate values for the stationary measure which maximizes the entropy on the partition `P`.  
 """
 function max_entropy_measure(MP::MarkovProcess, order::Int, solver, P::Partition,
-                             side_infos = FullSpace())
+                             side_infos = FullSpace(); inner_approx = SOSCone)
     model = SOSModel(solver)
+    PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
     w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
                    @variable(model) :
                    @variable(model, [1:1], Poly(monomials(MP.x, 0:order)))[1]) for v in vertices(P.graph))
