@@ -25,7 +25,7 @@ using Base.Iterators: product
 import LinearAlgebra: qr, nullspace, diag, Diagonal, tr, transpose
 import Base: show
 import Parameters: @unpack
-import SumOfSquares.MultivariatePolynomials.polynomial
+import MultivariatePolynomials.polynomial
 import SumOfSquares.SemialgebraicSets.inequalities
 
 const PV = PolyVar
