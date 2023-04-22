@@ -47,7 +47,7 @@ end
     test_DriftProcess(dp4, f)
 end
 
-@testset "DriftProcess - Optimization test"
+@testset "DriftProcess - Optimization test" begin
     @polyvar(x[1:2]) # state variables
     @polyvar(u) # control variables
     @polyvar(t) # time variable
