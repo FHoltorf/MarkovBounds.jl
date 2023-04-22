@@ -220,13 +220,7 @@ function project_into_subspace!(P::Union{ReactionProcess,LangevinProcess}, x0::V
 end
 
 function init_moments(x, x0, d)
-    n = length(x0)
-    moms = Dict()
-    for i in 1:(d+1)^n
-        midx = invert_index(i, (d+1)*ones(Int64,n)) .- 1
-        moms[prod(x.^midx)] = prod(x0.^midx)
-    end
-    return moms
+    return Dict(mono => mono(x=>x0) for mono in  monomials(x, 0:d))
 end
 
 init_moments(x, x0, d, P::Partition) =  Dict(P.get_vertex(x0) => init_moments(x, x0, d))
