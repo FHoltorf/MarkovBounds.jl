@@ -72,4 +72,5 @@ end
     trange = range(0, T, length = 11) # discretization of time horizon
     solver = Hypatia.Optimizer
     b = optimal_control(lv_control, μ0, order, trange, solver)
+    @test b.value >= 0.0
 end
