@@ -225,20 +225,6 @@ end
 
 init_moments(x, x0, d, P::Partition) =  Dict(P.get_vertex(x0) => init_moments(x, x0, d))
 
-linearize_index(idx,rs) = idx[1] + (length(idx) > 1 ? sum((idx[i] - 1) * prod(rs[1:i-1]) for i in 2:length(idx)) : 0)
-
-function invert_index(idx, rs)
-    inv_idx = similar(rs)
-    for i in length(rs):-1:2
-        fac = prod(rs[1:i-1])
-        n = div(idx - 1, fac)
-        inv_idx[i] = n + 1
-        idx -= n*fac
-    end
-    inv_idx[1] = idx
-    return inv_idx
-end
-
 function expectation(w::Polynomial, μ::Dict)
     ex = AffExpr(0.0)
     for i in 1:length(w.a)
