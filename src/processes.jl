@@ -1,4 +1,4 @@
-export JumpProcess, ReactionProcess, DiffusionProcess, LangevinProcess, JumpDiffusionProcess, ControlProcess,
+export JumpProcess, ReactionProcess, DriftProcess, DiffusionProcess, LangevinProcess, JumpDiffusionProcess, ControlProcess,
        MarkovProcess, LagrangeMayer, Lagrange, Mayer, ExitProbability, TerminalSetProbability,
        inf_generator, extended_inf_generator
 
