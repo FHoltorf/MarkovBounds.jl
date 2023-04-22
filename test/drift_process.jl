@@ -28,7 +28,7 @@ end
     X = [1.2*(x[1]^2 + 0.2*x[2])^2 >= 1, (0.2*x[1] - 0.5*x[2])^2 <= 2.0*x[1]^3]
     dp3 = DriftProcess(x, f, X)
 
-    test_DriftProcess(dp3, f, σ)
+    test_DriftProcess(dp3, f)
     
     Symbolics.@variables x[1:2], u[1:2]
     x = collect(x)
