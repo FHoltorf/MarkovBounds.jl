@@ -123,6 +123,13 @@ function transform_state!(P::ReactionProcess, x::AbstractVector, z::AbstractVect
     transform_state!(P.JumpProcess, x, z; iv = iv)
 end
 
+function transform_state!(P::DriftProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
+    Π = P.x => polynomial.(z)
+    P.f = map(p -> p(Π), P.f[iv])
+    P.X = subs_X(P.X, Π) #P.X isa FullSpace ? P.X : intersect([@set(p(Π) >= 0) for p in P.X.p]...)
+    P.x = x
+end
+
 function transform_state!(P::DiffusionProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
     Π = P.x => polynomial.(z)
     P.f = map(p -> p(Π), P.f[iv])
@@ -160,6 +167,11 @@ function rescale_state!(P::ReactionProcess, x0::Vector{<:Real})
     for i in 1:length(P.JumpProcess.h)
         P.JumpProcess.h[i] ./= x0
     end
+end
+
+function rescale_state!(P::DriftProcess, x0::Vector{<:Real})
+    transform_state!(P, P.x, P.x .* x0)
+    P.f ./= x0
 end
 
 function rescale_state!(P::DiffusionProcess, x0::Vector{<:Real})
