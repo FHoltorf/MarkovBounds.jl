@@ -320,7 +320,7 @@ function reverse_jumps(jumps)
     for j in rev_jumps
         for e in j 
             @assert (maxdegree(e) <= 1 && e.a[1] == 1) "jump reversal currently only supported for constant jumps"
-            e.a[end] = length(e.a) > 1 ? -1*e.a[end] : e.a[end]
+            e.a[end] = length(e.a) > 1 ? -1*e.a[end] : e.a[end]xw
         end
     end
     return rev_jumps
@@ -328,3 +328,17 @@ end
 
 inequalities(::FullSpace) = []
 polynomial(a::Real) = polynomial(DPTerm{true}(a))
+
+linearize_index(idx,rs) = idx[1] + (length(idx) > 1 ? sum((idx[i] - 1) * prod(rs[1:i-1]) for i in 2:length(idx)) : 0)
+
+function invert_index(idx, rs)
+    inv_idx = similar(rs)
+    for i in length(rs):-1:2
+        fac = prod(rs[1:i-1])
+        n = div(idx - 1, fac)
+        inv_idx[i] = n + 1
+        idx -= n*fac
+    end
+    inv_idx[1] = idx
+    return inv_idx
+end
