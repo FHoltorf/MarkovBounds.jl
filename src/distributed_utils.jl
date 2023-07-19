@@ -1,6 +1,6 @@
 export grid_graph, grid_partition, discrete_grid_graph, discrete_grid_partition, props
 
-function grid_graph(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor = zeros(Int64, length(lb)))
+function grid_graph(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor = zeros(Int64, length(lb)), X_base = FullSpace())
     @assert all(lb .<= ub) "lower boundary must be smaller than upper boundary"
     @assert all(n .>= 1) "minimum one partition element per dimension required"
     x_ranges = []
@@ -32,10 +32,10 @@ function grid_graph(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor 
             push!(x_ranges, boundaries)
         end
     end
-    return grid_graph(x, x_ranges)
+    return grid_graph(x, x_ranges; X_base = X_base)
 end
 
-function grid_graph(x, x_ranges)
+function grid_graph(x, x_ranges; X_base = FullSpace())
     n = length.(x_ranges) .- 1
     nv = prod(n)
 
@@ -45,10 +45,10 @@ function grid_graph(x, x_ranges)
         subset = FullSpace()
         for k in 1:length(idx)
             if !isinf(x_ranges[k][idx[k]])
-                subset = intersect(subset, @set(x[k] >= x_ranges[k][idx[k]]))
+                subset = intersect(subset, intersect(@set(x[k] >= x_ranges[k][idx[k]]), X_base))
             end
             if !isinf(x_ranges[k][idx[k]+1])
-                subset = intersect(subset, @set(x[k] <= x_ranges[k][idx[k]+1]))
+                subset = intersect(subset, intersect(@set(x[k] <= x_ranges[k][idx[k]+1]), X_base))
             end
         end
         set_prop!(mg, i, :cell, subset)
@@ -57,7 +57,7 @@ function grid_graph(x, x_ranges)
                 idx[k] += 1
                 j = linearize_index(idx, n)
                 add_edge!(mg, i, j)
-                set_prop!(mg, Edge(i,j), :interface, [@set(x[k] == x_ranges[k][idx[k]])])
+                set_prop!(mg, Edge(i,j), :interface, [intersect(@set(x[k] == x_ranges[k][idx[k]]), X_base)])
                 idx[k] -= 1
             end
         end
@@ -82,12 +82,12 @@ function grid_graph(x, x_ranges)
 end
 
 
-function grid_partition(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor = zeros(Int64, length(lb)))
-    return Partition(grid_graph(x, lb, ub, n; inf_top = inf_top, inf_floor = inf_floor)...)
+function grid_partition(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor = zeros(Int64, length(lb)), X_base = FullSpace())
+    return Partition(grid_graph(x, lb, ub, n; inf_top = inf_top, inf_floor = inf_floor, X_base = X_base)...)
 end
 
-function grid_partition(x, x_ranges)
-    return Partition(grid_graph(x, x_ranges)...)
+function grid_partition(x, x_ranges, X_base = FullSpace())
+    return Partition(grid_graph(x, x_ranges, X_base = X_base)...)
 end
 
 function check_membership(X::AbstractSemialgebraicSet, x_var, x)
