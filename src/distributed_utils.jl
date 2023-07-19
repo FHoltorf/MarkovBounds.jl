@@ -192,3 +192,15 @@ function neighborhood(state, JP::JumpProcess, rev_jumps, state_to_vertex)
     end
     return neighbors
 end
+
+function invert_index(idx, rs)
+    inv_idx = similar(rs)
+    for i in length(rs):-1:2
+        fac = prod(rs[1:i-1])
+        n = div(idx - 1, fac)
+        inv_idx[i] = n + 1
+        idx -= n*fac
+    end
+    inv_idx[1] = idx
+    return inv_idx
+end
