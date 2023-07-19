@@ -42,13 +42,13 @@ function grid_graph(x, x_ranges; X_base = FullSpace())
     mg = MetaDiGraph(nv)
     for i in 1:nv
         idx = invert_index(i, n)
-        subset = FullSpace()
+        subset = X_base
         for k in 1:length(idx)
             if !isinf(x_ranges[k][idx[k]])
-                subset = intersect(subset, intersect(@set(x[k] >= x_ranges[k][idx[k]]), X_base))
+                subset = intersect(subset, @set(x[k] >= x_ranges[k][idx[k]]))
             end
             if !isinf(x_ranges[k][idx[k]+1])
-                subset = intersect(subset, intersect(@set(x[k] <= x_ranges[k][idx[k]+1]), X_base))
+                subset = intersect(subset, @set(x[k] <= x_ranges[k][idx[k]+1]))
             end
         end
         set_prop!(mg, i, :cell, subset)
