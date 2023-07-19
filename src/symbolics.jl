@@ -52,6 +52,17 @@ end
 polynomialize_set(S::Num, vars::Dict) = polynomialize_set([S], vars)
 
 ## Process Constructors
+# Drift Process
+function DriftProcess(x::T, f::Vector{Num}, X = []; iv = [], controls = []) where T <: Union{Arr, Vector{Num}}
+    poly_vars = polynomialize_vars(x, controls, iv)
+    f = polynomialize_expr(f, poly_vars)
+    X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
+    poly_x = PV{true}[poly_vars[x[i]] for i in eachindex(x)]
+    poly_iv = isempty(iv) ? PV{true}("t") : poly_vars[iv]
+    poly_controls = PV{true}[poly_vars[controls[i]] for i in eachindex(controls)]
+    return DriftProcess(poly_x, f, X_poly; poly_vars = poly_vars, iv = poly_iv, controls = poly_controls)
+end
+
 # Jump Processes
 function JumpProcess(x::T, a::Vector{Num}, h::Vector{Vector{Num}}, X = []; iv = [], controls = []) where T <: Union{Arr, Vector{Num}}
     poly_vars = polynomialize_vars(x, controls, iv)
