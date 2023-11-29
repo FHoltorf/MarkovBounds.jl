@@ -297,12 +297,12 @@ function inf_generator(MP::JumpProcess, w::Dict, idx::Tuple{Int, Int}, p::Partit
     x_v = props(p.graph, v)[:cell].x
     gen = 0
     for i in 1:length(MP.a)
-        skip = false
         if isempty(intersect(MP.a[i].x.vars, MP.controls)) 
             prop = MP.a[i](MP.x => x_v)
             skip = prop == 0 ? true : false
         else
             prop = subs(MP.a[i], MP.x => x_v)
+            skip = prop == 0 ? true : false
         end
         if !skip
             x_u = [h(MP.x => x_v) for h in MP.h[i]]
@@ -324,12 +324,12 @@ function inf_generator(MP::JumpProcess, w::Dict, v::Int, p::Partition)
     x_v = props(p.graph, v)[:cell].x
     gen = 0
     for i in 1:length(MP.a)
-        skip = false
         if isempty(intersect(MP.a[i].x.vars, MP.controls)) 
             prop = MP.a[i](MP.x => x_v)
             skip = prop == 0 ? true : false
         else
             prop = subs(MP.a[i], MP.x => x_v)
+            skip = prop == 0 ? true : false
         end
         if !skip
             x_u = [h(MP.x => x_v) for h in MP.h[i]]

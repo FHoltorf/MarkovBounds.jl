@@ -110,8 +110,8 @@ end
 
 function transform_state!(P::JumpProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
     Π = P.x => polynomial.(z) #[P.x[i] => z[i] for i in 1:length(P.x)]
-    P.a = map(p -> p(Π), P.a)
-    P.h = [map(p -> p(Π), h[iv]) for h in P.h]
+    P.a = map(p -> subs(p,Π), P.a)
+    P.h = [map(p -> subs(p,Π), h[iv]) for h in P.h]
     P.X = subs_X(P.X, Π) #P.X isa FullSpace ? P.X : intersect([@set(p(Π) >= 0) for p in P.X.p]...)
     P.x = x
 end
@@ -125,15 +125,15 @@ end
 
 function transform_state!(P::DriftProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
     Π = P.x => polynomial.(z)
-    P.f = map(p -> p(Π), P.f[iv])
+    P.f = map(p -> subs(p,Π), P.f[iv])
     P.X = subs_X(P.X, Π) #P.X isa FullSpace ? P.X : intersect([@set(p(Π) >= 0) for p in P.X.p]...)
     P.x = x
 end
 
 function transform_state!(P::DiffusionProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
     Π = P.x => polynomial.(z)
-    P.f = map(p -> p(Π), P.f[iv])
-    P.σ = map(p -> p(Π), P.σ[iv, iv])
+    P.f = map(p -> subs(p,Π), P.f[iv])
+    P.σ = map(p -> subs(p,Π), P.σ[iv, iv])
     P.X = subs_X(P.X, Π) #P.X isa FullSpace ? P.X : intersect([@set(p(Π) >= 0) for p in P.X.p]...)
     P.x = x
 end
@@ -147,10 +147,10 @@ end
 
 function transform_state!(P::JumpDiffusionProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.x))
     Π = P.x => polynomial.(z) #[P.x[i] => z[i] for i in 1:length(P.x)]
-    P.a = map(p -> p(Π), P.a)
-    P.h = [map(p -> p(Π), h[iv]) for h in P.h]
-    P.f = map(p -> p(Π), P.f[iv])
-    P.σ = map(p -> p(Π), P.σ[iv, iv])
+    P.a = map(p -> subs(p,Π), P.a)
+    P.h = [map(p -> subs(p,Π), h[iv]) for h in P.h]
+    P.f = map(p -> subs(p,Π), P.f[iv])
+    P.σ = map(p -> subs(p,Π), P.σ[iv, iv])
     P.X = subs_X(P.X, Π) #P.X isa FullSpace ? P.X : intersect([@set(p(Π) >= 0) for p in P.X.p]...)
     P.x = x
 end
@@ -320,7 +320,7 @@ function reverse_jumps(jumps)
     for j in rev_jumps
         for e in j 
             @assert (maxdegree(e) <= 1 && e.a[1] == 1) "jump reversal currently only supported for constant jumps"
-            e.a[end] = length(e.a) > 1 ? -1*e.a[end] : e.a[end]xw
+            e.a[end] = length(e.a) > 1 ? -1*e.a[end] : e.a[end]
         end
     end
     return rev_jumps
@@ -341,4 +341,40 @@ function invert_index(idx, rs)
     end
     inv_idx[1] = idx
     return inv_idx
+end
+
+struct StateDict{dType,kType}
+    dict::dType
+    keys::kType
+    tol::Float64
+end
+
+function StateDict(entries::AbstractVector{<:Pair}; tol=1e-8)
+    dict = Dict(entries)
+    return StateDict(dict, collect(keys(dict)), convert(Float64, tol))
+end
+
+function StateDict((entries::Pair)...; tol = 1e-8)
+    dict = Dict(entries)
+    return StateDict(dict, collect(keys(dict)), convert(Float64, tol))
+end
+
+import Base.getindex, Base.setindex!, Base.values, Base.keys
+
+function getindex(sd::StateDict, idx)
+    sd_idx = findfirst(key -> isapprox(key,idx,atol=sd.tol), sd.keys)
+    return sd.dict[sd.keys[sd_idx]] 
+end
+
+function setindex!(sd::StateDict, val, idx)
+    sd.dict[idx] = val
+    push!(sd.keys, idx)
+end
+
+values(sd::StateDict) = values(sd.dict)
+keys(sd::StateDict) = keys(sd.dict)
+
+function closeto(x, sd::StateDict)
+    sd_idx = findfirst(key -> isapprox(key,x,atol=sd.tol), sd.keys)
+    return !isnothing(sd_idx)
 end

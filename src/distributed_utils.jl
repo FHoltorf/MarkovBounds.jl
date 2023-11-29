@@ -134,7 +134,7 @@ function discrete_grid_graph(JP::JumpProcess, x_ranges, Xc)
     x_var = JP.x
     partition_graph = MetaDiGraph()
     discrete_states = collect(product(x_ranges...))
-    state_to_vertex = Dict()
+    state_to_vertex = StateDict(;tol=1e-3)
     n_discrete = length(discrete_states)
     for i in eachindex(discrete_states)
         add_vertex!(partition_graph, :cell, @singleton(discrete_states[i]))
@@ -151,7 +151,7 @@ function discrete_grid_graph(JP::JumpProcess, x_ranges, Xc)
     end
 
     get_vertex = function (x)
-        if x in keys(state_to_vertex)
+        if closeto(x, state_to_vertex)
             vertex = state_to_vertex[x]
         elseif check_membership(JP.X, x_var, x)
             vertex = n_discrete + 1 
@@ -174,7 +174,7 @@ function neighborhood(state, JP::JumpProcess, state_to_vertex)
     neighbors = []
     for i in eachindex(rev_jumps)
         origin = [jump_component(x_var => state) for jump_component in rev_jumps[i]]
-        if JP.a[i](x_var => origin) != 0 && !(origin in keys(state_to_vertex)) && check_membership(JP.X, x_var, origin)
+        if subs(JP.a[i], x_var => origin) != 0 && !closeto(origin, state_to_vertex) && check_membership(JP.X, x_var, origin)
             push!(neighbors, origin)
         end
     end
@@ -186,7 +186,7 @@ function neighborhood(state, JP::JumpProcess, rev_jumps, state_to_vertex)
     neighbors = []
     for i in eachindex(rev_jumps)
         origin = round.([jump_component(x_var => state) for jump_component in rev_jumps[i]], digits = 8)
-        if JP.a[i](x_var => origin) != 0 && !(origin in keys(state_to_vertex)) && check_membership(JP.X, x_var, origin)
+        if subs(JP.a[i], x_var => origin) != 0 && !closeto(origin, state_to_vertex) && check_membership(JP.X, x_var, origin)
             push!(neighbors, origin)
         end
     end
