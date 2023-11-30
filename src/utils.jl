@@ -9,7 +9,7 @@ reformat_jumps(S::Matrix, species_to_index::Dict, x::AbstractVector) = [x .+ S[:
 ∂²(p,x,y) = differentiate(∂(p,x),y)
 ∂(X::BasicSemialgebraicSet) = [intersect(@set(X.p[i] == 0), [@set(X.p[k] >= 0) for k in 1:length(X.p) if k != i]..., X.V) for i in 1:length(X.p)]
 
-function reformat_reactions(rxns::Vector{Reaction}, species_to_index::Dict, x::Vector{<:PV}, params = Dict())
+function reformat_reactions(rxns::Vector{Reaction}, species_to_index::Dict, x::Vector{<:Variable}, params = Dict())
     props = Polynomial{true,Float64}[]
     for r in rxns
         @unpack rate, substrates, substoich, only_use_rate = r

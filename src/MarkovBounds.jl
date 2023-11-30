@@ -7,10 +7,10 @@ using SumOfSquares
 # moment bounding problems --> Reexport those
 @reexport using SumOfSquares
 
-@reexport using DynamicPolynomials: @polyvar, PolyVar, AbstractPolynomialLike,
+@reexport using DynamicPolynomials: @polyvar, Variable, AbstractPolynomialLike,
                                     Polynomial, subs, polynomial, differentiate,
                                     MonomialVector, maxdegree, polyarrayvar
-using DynamicPolynomials: Term as DPTerm
+using DynamicPolynomials: Term as DPTerm, Graded, LexOrder, Commutative, CreationOrder
 
 using Catalyst: @reaction_network, @parameters, species, speciesmap,
                 reactions, paramsmap, prodstoichmat, substoichmat,
@@ -28,7 +28,6 @@ import Parameters: @unpack
 import MultivariatePolynomials.polynomial
 import SumOfSquares.SemialgebraicSets.inequalities
 
-const PV = PolyVar
 const APL = AbstractPolynomialLike
 
 include("distributed.jl")

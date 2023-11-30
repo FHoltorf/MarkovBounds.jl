@@ -1,8 +1,8 @@
-polynomialize_vars(vars::AbstractArray) = Dict(v.val => PolyVar{true}(_name(v.val)) for v in vars)
-polynomialize_vars(var) = Dict(var.val => PolyVar{true}(_name(v.val)))
+polynomialize_vars(vars::AbstractArray) = Dict(v.val => _variable(_name(v.val)) for v in vars)
+polynomialize_vars(var) = Dict(var.val => _variable(_name(v.val)) )
 function polynomialize_vars(x::Arr)  
-    x_dp = polyarrayvar(PolyVar{true}, x.value.name, x.value.metadata[ArrayShapeCtx]...)
-    return Dict(x[i].val => x_dp[i] for i in 1:length(x_dp))
+    x_dp = polyarrayvar(Commutative{CreationOrder}, Graded{LexOrder}, x.value.name, x.value.metadata[ArrayShapeCtx]...)
+    return Dict(x[i].val => x_dp[i] for i in eachindex(x_dp))
 end
 function polynomialize_vars(vars_args...)
     var_to_poly = Dict()
@@ -13,6 +13,7 @@ function polynomialize_vars(vars_args...)
 end
 _name(v::Sym) = string(v.name)
 _name(v::Term) = string(v.arguments[1], "[", [string(arg,",") for arg in v.arguments[2:end]]..., "]")
+_variable(v::String) = Variable(v, Commutative{CreationOrder}, Graded{LexOrder})
 
 # need to find a better check if expression has been expanded. 
 # Here we assume that every expression will be supplied as Num.
@@ -53,13 +54,13 @@ polynomialize_set(S::Num, vars::Dict) = polynomialize_set([S], vars)
 
 ## Process Constructors
 # Drift Process
-function DriftProcess(x::T, f::Vector{Num}, X = []; iv = [], controls = []) where T <: Union{Arr, Vector{Num}}
+function DriftProcess(x::T, f::Vector{Num}, X = []; iv = nothing, controls = []) where T <: Union{Arr, Vector{Num}}
     poly_vars = polynomialize_vars(x, controls, iv)
     f = polynomialize_expr(f, poly_vars)
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
-    poly_x = PV{true}[poly_vars[x[i]] for i in eachindex(x)]
-    poly_iv = isempty(iv) ? PV{true}("t") : poly_vars[iv]
-    poly_controls = PV{true}[poly_vars[controls[i]] for i in eachindex(controls)]
+    poly_x = collect(values(poly_vars))
+    poly_iv = isnothing(iv) ? var : poly_vars[iv]
+    poly_controls = [poly_vars[controls[i]] for i in eachindex(controls)]
     return DriftProcess(poly_x, f, X_poly; poly_vars = poly_vars, iv = poly_iv, controls = poly_controls)
 end
 
@@ -69,9 +70,9 @@ function JumpProcess(x::T, a::Vector{Num}, h::Vector{Vector{Num}}, X = []; iv = 
     a = polynomialize_expr(a, poly_vars)
     h = [polynomialize_expr(hi, poly_vars) for hi in h]
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
-    poly_x = PV{true}[poly_vars[x[i]] for i in eachindex(x)]
-    poly_iv = isempty(iv) ? PV{true}("t") : poly_vars[iv]
-    poly_controls = PV{true}[poly_vars[controls[i]] for i in eachindex(controls)]
+    poly_x = [poly_vars[x[i]] for i in eachindex(x)]
+    poly_iv = isempty(iv) ? _variable("t") : poly_vars[iv]
+    poly_controls = [poly_vars[controls[i]] for i in eachindex(controls)]
     return JumpProcess(poly_x, a, h, X_poly; poly_vars = poly_vars, iv = poly_iv, controls = poly_controls)
 end
 
@@ -89,8 +90,8 @@ function DiffusionProcess(x::T, f::Vector{Num}, σ::Matrix{Num}, X = []; iv = []
     σ = polynomialize_expr(σ, poly_vars)
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
     poly_x = [poly_vars[x[i]] for i in eachindex(x)]
-    poly_iv = isempty(iv) ? PV{true}("t") : poly_vars[iv]
-    poly_controls = PV{true}[poly_vars[controls[i]] for i in eachindex(controls)]
+    poly_iv = isempty(iv) ? _variable("t") : poly_vars[iv]
+    poly_controls = [poly_vars[controls[i]] for i in eachindex(controls)]
     return DiffusionProcess(poly_x, f, σ, X_poly, poly_vars = poly_vars, iv = poly_iv, controls = poly_controls)
 end
 
@@ -106,8 +107,8 @@ function JumpDiffusionProcess(x::T, a::Vector{Num}, h::Vector{Vector{Num}}, f::V
     σ = polynomialize_expr(σ, poly_vars)
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
     poly_x = [poly_vars[x[i]] for i in eachindex(x)]
-    poly_iv = isempty(iv) ? PV{true}("t") : poly_vars[iv]
-    poly_controls = PV{true}[poly_vars[controls[i]] for i in eachindex(controls)]
+    poly_iv = isempty(iv) ? _variable("t") : poly_vars[iv]
+    poly_controls = [poly_vars[controls[i]] for i in eachindex(controls)]
     return JumpDiffusionProcess(poly_x, a, h, f, σ, X_poly, poly_vars = poly_vars, iv = poly_iv, controls = poly_controls)
 end
 
