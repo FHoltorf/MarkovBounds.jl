@@ -331,8 +331,8 @@ function reverse_jumps(jumps)
     rev_jumps = deepcopy(jumps)
     for j in rev_jumps
         for e in j 
-            @assert (maxdegree(e) <= 1 && e.a[1] == 1) "jump reversal currently only supported for constant jumps"
-            e.a[end] = length(e.a) > 1 ? -1*e.a[end] : e.a[end]
+            @assert (maxdegree(e) <= 1 && e.a[end] == 1) "jump reversal currently only supported for constant jumps"
+            e.a[1] = length(e.a) > 1 ? -1*e.a[1] : e.a[1]
         end
     end
     return rev_jumps
