@@ -67,7 +67,7 @@ function polynomialize_set(S::Vector, vars::Dict)
             push!(eq, polys[1] - polys[2])
         end
     end
-    return BasicSemialgebraicSet(algebraicset(eq), ineq)
+    return BasicSemialgebraicSet(algebraic_set(eq), ineq)
 end
 
 polynomialize_set(S::Num, vars::Dict) = polynomialize_set([S], vars)

@@ -319,7 +319,7 @@ function subs_X(X::BasicSemialgebraicSet, submap)
     for eq in inequalities(X)
         push!(ineqs, eq(submap))
     end
-    return BasicSemialgebraicSet(algebraicset(eqs), ineqs)
+    return BasicSemialgebraicSet(algebraic_set(eqs), ineqs)
 end
 
 function subs_X(X::FullSpace, submap)
