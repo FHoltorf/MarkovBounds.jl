@@ -33,7 +33,7 @@ constructor returns `DriftProcess` object with fields
 end
 
 function DriftProcess(x::Vector{<:Variable}, f::Vector{<:APL}, X = FullSpace();
-                      iv = _variable("t"), controls = Variable{COMMUTATIVE, POLYORDER}[], poly_vars = Dict())
+                      iv = _variable("t"), controls = VAR[], poly_vars = Dict())
     return DriftProcess(x, polynomial.(f), X, iv, controls, poly_vars)
 end 
 
@@ -64,13 +64,13 @@ constructor returns `JumpProcess` object with fields
 end
 
 function JumpProcess(x::Vector{<:Variable}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, X = FullSpace();
-                     iv = _variable("t"), controls = Variable[], poly_vars = Dict())
+                     iv = _variable("t"), controls = VAR[], poly_vars = Dict())
     return JumpProcess(x, polynomial.(a), map(p -> polynomial.(p), h), X, iv, controls, poly_vars)
 end
 
-JumpProcess(x::Variable, a::APL, h::APL, X = FullSpace(); iv = _variable("t"), controls = Variable[]) =
+JumpProcess(x::Variable, a::APL, h::APL, X = FullSpace(); iv = _variable("t"), controls = VAR[]) =
             JumpProcess([x], [a], [[h]], X; iv=iv, controls = (controls isa Vector ? controls : [controls]))
-JumpProcess(x::Variable, a::Vector{<:APL}, h::Vector{<:APL}, X = FullSpace(); iv = _variable("t"), controls = Variable[]) =
+JumpProcess(x::Variable, a::Vector{<:APL}, h::Vector{<:APL}, X = FullSpace(); iv = _variable("t"), controls = VAR[]) =
             JumpProcess([x], a, [[hi] for hi in h], X; iv = iv, controls = (controls isa Vector ? controls : [controls]))
 
 """
@@ -134,11 +134,11 @@ constructor returns `DiffusionProcess` object with fields
 end
 
 function DiffusionProcess(x::Vector{<:Variable}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
-                          iv = _variable("t"), controls = Variable[], poly_vars = Dict())
+                          iv = _variable("t"), controls = VAR[], poly_vars = Dict())
     return DiffusionProcess(x, polynomial.(f), polynomial.(σ), X, iv, controls, poly_vars)
 end
 
-DiffusionProcess(x::Variable, f::APL, σ::APL, X = FullSpace(); iv::Variable = _variable("t"), controls = Variable[]) =
+DiffusionProcess(x::Variable, f::APL, σ::APL, X = FullSpace(); iv::Variable = _variable("t"), controls = VAR[]) =
                  DiffusionProcess([x], [f], reshape([σ],1,1), X; iv=iv, controls = (controls isa Vector ? controls : [controls]))
                 
 @concrete mutable struct LangevinProcess <: MarkovProcess
@@ -195,12 +195,12 @@ constructor returns `JumpDiffusionProcess` object with fields
 end
 
 function JumpDiffusionProcess(x::Vector{<:Variable}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
-                              iv = _variable("t"), controls = Variable[], poly_vars = Dict())
+                              iv = _variable("t"), controls = VAR[], poly_vars = Dict())
     return JumpDiffusionProcess(x, polynomial.(a), map(p -> polynomial.(p), h), polynomial.(f), polynomial.(σ), X, iv, controls, poly_vars)
 end
-JumpDiffusionProcess(x::Variable, a::APL, h::APL, f::APL, σ::APL, X = Fullspace(); iv = _variable("t"), controls = Variable[]) =
+JumpDiffusionProcess(x::Variable, a::APL, h::APL, f::APL, σ::APL, X = Fullspace(); iv = _variable("t"), controls = VAR[]) =
                      JumpDiffusionProcess([x], [a], [[h]], [f], reshape(σ,1,1), X; iv=iv, controls=(controls isa Vector ? controls : [controls]))
-JumpDiffusionProcess(x::Variable, a::Vector{<:APL}, h::Vector{<:APL}, f::APL, σ::APL, X = Fullspace(); iv = _variable("t"), controls=Variable[]) =
+JumpDiffusionProcess(x::Variable, a::Vector{<:APL}, h::Vector{<:APL}, f::APL, σ::APL, X = Fullspace(); iv = _variable("t"), controls=VAR[]) =
                      JumpDiffusionProcess([x], a, [[hi] for hi in h], [f], reshape(σ,1,1), X; iv=iv, controls=(controls isa Vector ? controls : [controls]))
 
 function JumpDiffusionProcess(JP::JumpProcess, DP::DiffusionProcess)
@@ -304,7 +304,7 @@ function inf_generator(MP::JumpProcess, w::Dict, idx::Tuple{Int, Int}, p::Partit
     k, v = idx
     x_v = props(p.graph, v)[:cell].x
     gen = 0
-    for i in 1:length(MP.a)
+    for i in 1:length(MP.a)        
         if isempty(intersect(MP.a[i].x.vars, MP.controls)) 
             prop = MP.a[i](MP.x => x_v)
             skip = prop == 0 ? true : false
@@ -355,7 +355,7 @@ function inf_generator(MP::JumpProcess, w::Dict, v::Int, p::Partition)
     return gen
 end
 
-extended_inf_generator(MP::JumpProcess, w, v, p::Partition; scale = 1) = ∂(w[v],MP.iv) + scale*inf_generator(MP, w, v, p)
+extended_inf_generator(MP::JumpProcess, w, v, P::Partition; scale = 1) = ∂(w[v],MP.iv) + scale*inf_generator(MP, w, v, P)
 
 @concrete mutable struct Bound
     value<:Real

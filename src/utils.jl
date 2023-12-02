@@ -111,7 +111,7 @@ function transform_state(P::JumpProcess, x::AbstractVector, z::AbstractVector; i
     a = map(p -> subs(p,Π), P.a)
     h = [map(p -> subs(p,Π), h[iv]) for h in P.h]
     X = subs_X(P.X, Π) #P.X isa FullSpace ? P.X : intersect([@set(p(Π) >= 0) for p in P.X.p]...)
-    return JumpProcess(x, a, h, X, iv, P.controls, P.poly_vars)
+    return JumpProcess(x, a, h, X, P.iv, P.controls, P.poly_vars)
 end
 
 function transform_state(P::ReactionProcess, x::AbstractVector, z::AbstractVector; iv::AbstractVector = 1:length(P.JumpProcess.x))
