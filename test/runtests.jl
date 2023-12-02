@@ -1,4 +1,5 @@
-using MarkovBounds, Catalyst
+using MarkovBounds
+using Catalyst
 using Test
 
 include("reaction_process.jl")

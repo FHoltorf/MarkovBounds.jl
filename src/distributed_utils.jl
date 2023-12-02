@@ -123,8 +123,8 @@ function complement(X::BasicSemialgebraicSet, H = FullSpace())
     ineqs = inequalities(X)
     m = length(ineqs)
     for i in 1:m
-        push!(Ys, intersect(H, BasicSemialgebraicSet(algebraicset(Polynomial{true, Float64}[]),
-                                                    vcat(ineqs[1:end-1], -ineqs[end]))))
+        push!(Ys, intersect(H, BasicSemialgebraicSet(algebraicset(POLY[]),
+                                                     vcat(ineqs[1:end-1], -ineqs[end]))))
         pop!(ineqs)
     end
     return Ys

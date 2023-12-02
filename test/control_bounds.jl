@@ -1,6 +1,6 @@
-using DynamicPolynomials, Catalyst, Hypatia, MarkovBounds
+using DynamicPolynomials, Catalyst, MarkovBounds, COSMO
 # define solver
-solver = Hypatia.Optimizer
+solver = COSMO.Optimizer #Hypatia.Optimizer
 
 # define diffusion process -> Lotka-Volterra Predator-Prey model
 @polyvar(x[1:2]) # state variables

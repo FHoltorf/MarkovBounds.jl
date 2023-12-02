@@ -23,18 +23,19 @@ constructor returns `DriftProcess` object with fields
 * `controls` - vector of control variables (empty if there are none)
 * `poly_vars` - Dict mapping symbolic variables created by Catalyst.jl or ModelingToolkit.jl to generated Variable placeholders.
 """
-mutable struct DriftProcess <: MarkovProcess
-    x::Vector{<:Variable} # state
-    f::Vector{<:Polynomial} # propensities
+@concrete mutable struct DriftProcess <: MarkovProcess
+    x # state
+    f # propensities
     X # state space enclosure
-    iv::Variable
-    controls::Vector{<:Variable}
-    poly_vars::Dict # needed if process defined in terms of Symbolics.jl variables
-    function DriftProcess(x::Vector{<:Variable}, f::Vector{<:APL}, X = FullSpace();
-                         iv = _variable("t"), controls = Variable{Commutative{CreationOrder}, Graded{LexOrder}}[], poly_vars = Dict())
-        return new(x, polynomial.(f), X, iv, controls, poly_vars)
-    end 
+    iv
+    controls
+    poly_vars # needed if process defined in terms of Symbolics.jl variables
 end
+
+function DriftProcess(x::Vector{<:Variable}, f::Vector{<:APL}, X = FullSpace();
+                      iv = _variable("t"), controls = Variable{COMMUTATIVE, POLYORDER}[], poly_vars = Dict())
+    return DriftProcess(x, polynomial.(f), X, iv, controls, poly_vars)
+end 
 
 """
     JumpProcess(x, a, h, X = FullSpace();
@@ -52,18 +53,19 @@ constructor returns `JumpProcess` object with fields
 * `controls` - vector of control variables (empty if there are none)
 * `poly_vars` - Dict mapping symbolic variables created by Catalyst.jl or ModelingToolkit.jl to generated Variable placeholders.
 """
-mutable struct JumpProcess <: MarkovProcess
-    x::Vector{<:Variable} # state
-    a::Vector{<:Polynomial} # propensities
-    h::Vector{Vector{<:Polynomial}} # jumps
+@concrete mutable struct JumpProcess <: MarkovProcess
+    x # state
+    a # propensities
+    h # jumps
     X # state space enclosure
-    iv::Variable
-    controls::Vector{<:Variable}
-    poly_vars::Dict # needed if process defined in terms of Symbolics.jl variables
-    function JumpProcess(x::Vector{<:Variable}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, X = FullSpace();
-                         iv = _variable("t"), controls = Variable[], poly_vars = Dict())
-        return new(x, polynomial.(a), map(p -> polynomial.(p), h), X, iv, controls, poly_vars)
-    end
+    iv
+    controls
+    poly_vars # needed if process defined in terms of Symbolics.jl variables
+end
+
+function JumpProcess(x::Vector{<:Variable}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, X = FullSpace();
+                     iv = _variable("t"), controls = Variable[], poly_vars = Dict())
+    return JumpProcess(x, polynomial.(a), map(p -> polynomial.(p), h), X, iv, controls, poly_vars)
 end
 
 JumpProcess(x::Variable, a::APL, h::APL, X = FullSpace(); iv = _variable("t"), controls = Variable[]) =
@@ -82,25 +84,26 @@ The fields of ReactionProcess objects are
 * `species_to_state` - Dictionary mapping species to equivalent state in the JumpProcess
 * `state_to_species` - Dictionary mapping state in `JumpProcess` to species in reaction network
 """
-mutable struct ReactionProcess <: MarkovProcess
-    ReactionSystem::ReactionSystem
-    JumpProcess::JumpProcess
-    species_to_index::Dict
-    species_to_state::Dict
-    state_to_species::Dict
-    function ReactionProcess(rn::ReactionSystem, params = Dict())
-        specs = species(rn)
-        S = prodstoichmat(rn) - substoichmat(rn)
-        n = length(specs)
-        @polyvar(x[1:n])
-        spec2idx = Dict(specs[i] => i for i in 1:n)
-        spec2state = Dict(specs[i] => x[i] for i in 1:n)
-        state2spec = Dict(x[i] => specs[i] for i in 1:n)
-        props = reformat_reactions(reactions(rn), spec2idx, x, params)
-        jumps = reformat_jumps(S, spec2idx, x)
-        support = intersect([@set(x[i] >= 0) for i in 1:n]...)
-        return new(rn, JumpProcess(x,props,jumps,support), spec2idx, spec2state, state2spec)
-    end
+@concrete mutable struct ReactionProcess <: MarkovProcess
+    ReactionSystem<:ReactionSystem
+    JumpProcess<:JumpProcess
+    species_to_index
+    species_to_state
+    state_to_species
+end
+
+function ReactionProcess(rn::ReactionSystem, params = Dict())
+    specs = species(rn)
+    S = prodstoichmat(rn) - substoichmat(rn)
+    n = length(specs)
+    @polyvar(x[1:n])
+    spec2idx = Dict(specs[i] => i for i in 1:n)
+    spec2state = Dict(specs[i] => polynomial(x[i]) for i in 1:n)
+    state2spec = Dict(polynomial(x[i]) => specs[i] for i in 1:n)
+    props = reformat_reactions(reactions(rn), spec2idx, x, params)
+    jumps = reformat_jumps(S, spec2idx, x)
+    support = intersect([@set(x[i] >= 0) for i in 1:n]...)
+    return ReactionProcess(rn, JumpProcess(x,props,jumps,support), spec2idx, spec2state, state2spec)
 end
 
 """
@@ -119,43 +122,46 @@ constructor returns `DiffusionProcess` object with fields
 * `controls` - vector of control variables (empty if there are none)
 * `poly_vars` - Dict mapping symbolic variables created by Catalyst.jl or ModelingToolkit.jl to generated Variable placeholders.
 """
-mutable struct DiffusionProcess <: MarkovProcess
-    x::Vector{<:Variable}  # state
-    f::Vector{<:Polynomial} # drift
-    σ::Matrix{<:Polynomial} # diffusion matrix
+
+@concrete mutable struct DiffusionProcess <: MarkovProcess
+    x  # state
+    f # drift
+    σ # diffusion matrix
     X # support
-    iv::Variable
-    controls::Vector{<:Variable}
-    poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
-    function DiffusionProcess(x::Vector{<:Variable}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
-                              iv = _variable("t"), controls = Variable[], poly_vars = Dict())
-        return new(x, polynomial.(f), polynomial.(σ), X, iv, controls, poly_vars)
-    end
+    iv
+    controls
+    poly_vars # needed if process defined in terms of symbolics.jl variables
+end
+
+function DiffusionProcess(x::Vector{<:Variable}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
+                          iv = _variable("t"), controls = Variable[], poly_vars = Dict())
+    return DiffusionProcess(x, polynomial.(f), polynomial.(σ), X, iv, controls, poly_vars)
 end
 
 DiffusionProcess(x::Variable, f::APL, σ::APL, X = FullSpace(); iv::Variable = _variable("t"), controls = Variable[]) =
                  DiffusionProcess([x], [f], reshape([σ],1,1), X; iv=iv, controls = (controls isa Vector ? controls : [controls]))
                 
-mutable struct LangevinProcess <: MarkovProcess
-    ReactionSystem::ReactionSystem
-    DiffusionProcess::DiffusionProcess
-    species_to_index::Dict
-    species_to_state::Dict
-    state_to_species::Dict
-    function LangevinProcess(rn::ReactionSystem, params = Dict())
-        specs = species(rn)
-        S = prodstoichmat(rn) - substoichmat(rn)
-        n = length(specs)
-        @polyvar(x[1:n])
-        spec2idx = Dict(specs[i] => i for i in 1:n)
-        spec2state = Dict(specs[i] => x[i] for i in 1:n)
-        state2spec = Dict(x[i] => specs[i] for i in 1:n)
-        props = polynomial.(reformat_reactions(reactions(rn), spec2idx, x, params))
-        drift = S*props
-        diff = [sum(S[i,k]*S[j,k]*props[k] for k in eachindex(props)) for i in 1:n, j in 1:n]
-        support = intersect([@set(x[i] >= 0) for i in 1:n]...)
-        return new(rn, DiffusionProcess(x,drift,diff,support), spec2idx, spec2state, state2spec)
-    end
+@concrete mutable struct LangevinProcess <: MarkovProcess
+    ReactionSystem<:ReactionSystem
+    DiffusionProcess<:DiffusionProcess
+    species_to_index
+    species_to_state
+    state_to_species
+end
+
+function LangevinProcess(rn::ReactionSystem, params = Dict())
+    specs = species(rn)
+    S = prodstoichmat(rn) - substoichmat(rn)
+    n = length(specs)
+    @polyvar(x[1:n])
+    spec2idx = Dict(specs[i] => i for i in 1:n)
+    spec2state = Dict(specs[i] => x[i] for i in 1:n)
+    state2spec = Dict(x[i] => specs[i] for i in 1:n)
+    props = polynomial.(reformat_reactions(reactions(rn), spec2idx, x, params))
+    drift = S*props
+    diff = [sum(S[i,k]*S[j,k]*props[k] for k in eachindex(props)) for i in 1:n, j in 1:n]
+    support = intersect([@set(x[i] >= 0) for i in 1:n]...)
+    return LangevinProcess(rn, DiffusionProcess(x,drift,diff,support), spec2idx, spec2state, state2spec)
 end
 
 """
@@ -176,22 +182,22 @@ constructor returns `JumpDiffusionProcess` object with fields
 * `controls` - vector of control variables (empty if there are none)
 * `poly_vars` - Dict mapping symbolic variables created by Catalyst.jl or ModelingToolkit.jl to generated Variable placeholders.
 """
-mutable struct JumpDiffusionProcess <: MarkovProcess
-    x::Vector{<:Variable} # state
-    a::Vector{<:Polynomial} # propensities
-    h::Vector{Vector{<:Polynomial}} # jumps
-    f::Vector{<:Polynomial} # drift
-    σ::Matrix{<:Polynomial} # diffusion matrix
+@concrete mutable struct JumpDiffusionProcess <: MarkovProcess
+    x # state
+    a # propensities
+    h # jumps
+    f # drift
+    σ # diffusion matrix
     X # state space enclosure
-    iv::Variable
-    controls::Vector{<:Variable}
-    poly_vars::Dict # needed if process defined in terms of symbolics.jl variables
-    function JumpDiffusionProcess(x::Vector{<:Variable}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
-                                  iv = _variable("t"), controls = Variable[], poly_vars = Dict())
-        return new(x, polynomial.(a), map(p -> polynomial.(p), h), polynomial.(f), polynomial.(σ), X, iv, controls, poly_vars)
-    end
+    iv
+    controls
+    poly_vars # needed if process defined in terms of symbolics.jl variables
 end
 
+function JumpDiffusionProcess(x::Vector{<:Variable}, a::Vector{<:APL}, h::Vector{<:Vector{<:APL}}, f::Vector{<:APL}, σ::Matrix{<:APL}, X = FullSpace();
+                              iv = _variable("t"), controls = Variable[], poly_vars = Dict())
+    return JumpDiffusionProcess(x, polynomial.(a), map(p -> polynomial.(p), h), polynomial.(f), polynomial.(σ), X, iv, controls, poly_vars)
+end
 JumpDiffusionProcess(x::Variable, a::APL, h::APL, f::APL, σ::APL, X = Fullspace(); iv = _variable("t"), controls = Variable[]) =
                      JumpDiffusionProcess([x], [a], [[h]], [f], reshape(σ,1,1), X; iv=iv, controls=(controls isa Vector ? controls : [controls]))
 JumpDiffusionProcess(x::Variable, a::Vector{<:APL}, h::Vector{<:APL}, f::APL, σ::APL, X = Fullspace(); iv = _variable("t"), controls=Variable[]) =
@@ -213,9 +219,9 @@ constructor returns object of type `ControlProcess` with fields
 * `TerminalChanceConstraints` - Array of terminal chance constraints
 * `discount_factor` - discount factor for accumulating stage cost
 """
-mutable struct ControlProcess
-    MP::MarkovProcess
-    T::Real  # time horizon
+@concrete mutable struct ControlProcess
+    MP
+    T # time horizon
     U # set of admissible controls
     Objective # objetive function
     PathChanceConstraints
@@ -226,9 +232,11 @@ mutable struct ControlProcess
         if isinf(T)
             @assert dis_fac > 0 "Exponential discounting is required for infinite horizon control problems"
         end
-        return new(MP, T, U, obj, PCs, TCs, dis_fac)
+        return new{typeof(MP), typeof(T), typeof(U), typeof(obj), typeof(PCs), typeof(TCs), typeof(dis_fac)}(MP, T, U, obj, PCs, TCs, dis_fac)
     end
 end
+
+
 
 """
     ExitProbability
@@ -239,8 +247,8 @@ to exit a specified closed basic semialgebraic set on the time horizon specified
 Fields: 
 * X - basic semialgebraic set whose exit probability is to be quantified
 """
-mutable struct ExitProbability
-    X::BasicSemialgebraicSet
+@concrete mutable struct ExitProbability
+    X
 end
 
 
@@ -253,8 +261,8 @@ to occupy a specified closed basic semialgebraic set at the end of the control h
 Fields: 
 * X - basic semialgebraic set whose occupation probability is to be quantified at the end of the control horizon
 """
-mutable struct TerminalSetProbability
-    X::BasicSemialgebraicSet
+@concrete mutable struct TerminalSetProbability
+    X
 end
 
 @doc raw"""
@@ -271,17 +279,17 @@ Fields:
 If only a Lagrange or Mayer term is neede for specification of the objective function, one can make use of the functions
 `Lagrange(l::AbstractPolynomialLike)` and `Mayer(m::AbstractPolynomialLike)` for more convenient model specification.
 """
-mutable struct LagrangeMayer
-    l::APL
-    m::APL
+@concrete mutable struct LagrangeMayer
+    l
+    m
 end
 
 Lagrange(l) = LagrangeMayer(l, polynomial(0)) # not elegant but works
 Mayer(m) = LagrangeMayer(polynomial(0), m) # not elegant but works
 
-mutable struct ChanceConstraint
-    X::BasicSemialgebraicSet
-    α::Real # confidence level
+@concrete mutable struct ChanceConstraint
+    X
+    α
 end
 
 
@@ -349,9 +357,9 @@ end
 
 extended_inf_generator(MP::JumpProcess, w, v, p::Partition; scale = 1) = ∂(w[v],MP.iv) + scale*inf_generator(MP, w, v, p)
 
-mutable struct Bound
-    value::Real
-    model::Model
-    partition::Partition
+@concrete mutable struct Bound
+    value<:Real
+    model<:Model
+    partition
     w
 end

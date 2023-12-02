@@ -2,10 +2,10 @@ using Symbolics, LinearAlgebra, MarkovBounds
 
 function test_JumpProcess(jp, a, h)
     # test propensities
-    @test all([isequal(substitute(a[i], jp.poly_vars), jp.a[i]) for i in eachindex(a)])
+    @test all([isequal(Symbolics.substitute(a[i], jp.poly_vars), jp.a[i]) for i in eachindex(a)])
     # test jumps
     for (k,jump) in enumerate(h)
-        @test all([isequal(substitute(jump[i], jp.poly_vars), jp.h[k][i]) for i in eachindex(jump)])
+        @test all([isequal(Symbolics.substitute(jump[i], jp.poly_vars), jp.h[k][i]) for i in eachindex(jump)])
     end
 end
 
@@ -13,7 +13,7 @@ end
     # initialization via Symbolics.jl
     Symbolics.@variables x, y, u, v
     a = [0.2*(x-1.2*v)^2*u; 0.2*y + u]
-    h = [[x + 1, y*v], [0.7*x, (x+1.2*y)^2 + u]]
+    h = [[x + 1.0, 1.0y*v], [0.7*x, (x+1.2*y)^2 + u]]
     X = [1.2*(x^2 + 0.2*y)^2 >= 1, (0.2*x - 0.5*y)^2 <= 2.0*x^3]
     jp1 = JumpProcess([x,y], a, h, X, controls = [u,v])
     

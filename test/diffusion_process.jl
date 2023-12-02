@@ -2,9 +2,9 @@ using Symbolics, LinearAlgebra, MarkovBounds
 
 function test_DifussionProcess(dp, f, σ)
     # test drift
-    @test all([isequal(substitute(f[i], dp.poly_vars), dp.f[i]) for i in eachindex(f)])
+    @test all([isequal(Symbolics.substitute(f[i], dp.poly_vars), dp.f[i]) for i in eachindex(f)])
     # test diffusion
-    @test all([isequal(substitute(σ[i], dp.poly_vars), dp.σ[i]) for i in eachindex(f)])
+    @test all([isequal(Symbolics.substitute(σ[i], dp.poly_vars), dp.σ[i]) for i in eachindex(f)])
 end
 
 # initialization via Symbolics.jl

@@ -1,8 +1,8 @@
-using Symbolics, LinearAlgebra, MarkovBounds, Hypatia
+using Symbolics, LinearAlgebra, MarkovBounds, COSMO
 
 function test_DriftProcess(dp, f)
     # test drift
-    @test all([isequal(substitute(f[i], dp.poly_vars), dp.f[i]) for i in eachindex(f)])
+    @test all([isequal(Symbolics.substitute(f[i], dp.poly_vars), dp.f[i]) for i in eachindex(f)])
 end
 
 # initialization via Symbolics.jl
@@ -70,7 +70,7 @@ end
     x0 = [1.0, 0.25]
     μ0 = Dict(x[1]^i*x[2]^j => x0[1]^i*x0[2]^j for i in 0:order+1, j in 0:order+1) # moments of initial distribution
     trange = range(0, T, length = 11) # discretization of time horizon
-    solver = Hypatia.Optimizer
+    solver = COSMO.Optimizer
     b = optimal_control(lv_control, μ0, order, trange, solver)
     @test b.value >= 0.0
 end

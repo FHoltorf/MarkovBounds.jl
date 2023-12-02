@@ -2,15 +2,15 @@ using Symbolics, LinearAlgebra, MarkovBounds
 
 function test_JumpDiffusionProcess(jpd, a, h, f, σ)
     # test propensities
-    @test all([isequal(substitute(a[i], jpd.poly_vars), jpd.a[i]) for i in eachindex(a)])
+    @test all([isequal(Symbolics.substitute(a[i], jpd.poly_vars), jpd.a[i]) for i in eachindex(a)])
     # test jumps
     for (k,jump) in enumerate(h)
-        @test all([isequal(substitute(jump[i], jpd.poly_vars), jpd.h[k][i]) for i in eachindex(jump)])
+        @test all([isequal(Symbolics.substitute(jump[i], jpd.poly_vars), jpd.h[k][i]) for i in eachindex(jump)])
     end
     # test drift
-    @test all([isequal(substitute(f[i], jpd.poly_vars), jpd.f[i]) for i in eachindex(f)])
+    @test all([isequal(Symbolics.substitute(f[i], jpd.poly_vars), jpd.f[i]) for i in eachindex(f)])
     # test diffusion
-    @test all([isequal(substitute(σ[i], jpd.poly_vars), jpd.σ[i]) for i in eachindex(f)])
+    @test all([isequal(Symbolics.substitute(σ[i], jpd.poly_vars), jpd.σ[i]) for i in eachindex(f)])
 end
 
 # initialization via Symbolics.jl

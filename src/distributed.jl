@@ -1,20 +1,20 @@
 export Partition, Singleton, @singleton, SemidiscreteSet
 
-mutable struct Singleton
-    x::AbstractVector
+@concrete mutable struct Singleton
+    x<:AbstractVector
 end
 Singleton(x::Real) = Singleton([x])
-Singleton(x::Tuple) = Singleton([x...])
+Singleton(x::Tuple) = Singleton(collect(x))
 macro singleton(x)
     return :(Singleton($(esc(x))))
 end
 
-mutable struct SemidiscreteSet
+@concrete mutable struct SemidiscreteSet
     discrete # vector of pairs x => [vals] (each referencing a singleton in the projected space)
     continuous # BasicSemialgebraicSet
 end
 
-struct Partition
+@concrete struct Partition
     graph
     get_vertex
 end
