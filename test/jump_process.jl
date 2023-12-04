@@ -1,5 +1,3 @@
-using Symbolics, LinearAlgebra, MarkovBounds
-
 function test_JumpProcess(jp, a, h)
     # test propensities
     @test all([isequal(Symbolics.substitute(a[i], jp.poly_vars), jp.a[i]) for i in eachindex(a)])

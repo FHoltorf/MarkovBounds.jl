@@ -1,7 +1,3 @@
-using DynamicPolynomials, Catalyst, COSMO
-# specify solver
-solver = COSMO.Optimizer
-
 # define diffusion process -> Lotka-Volterra Predator-Prey model
 @polyvar(x[1:2]) # state variables
 u = 0.5 # constant hunting 
@@ -70,8 +66,6 @@ end
 @testset "stationary_probability_mass tests" begin
     S = @set(x[1] <= 0.01 && x[2] <= 0.01)
     lb, ub = MarkovBounds.stationary_probability_mass(lotka_volterra, S, 2, solver)
-    println(lb.value)
-    println(ub.value)
     @test lb.value >= -1e-6
     @test ub.value <= 1 + 1e6
 end

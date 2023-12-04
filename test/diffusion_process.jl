@@ -1,5 +1,3 @@
-using Symbolics, LinearAlgebra, MarkovBounds
-
 function test_DifussionProcess(dp, f, σ)
     # test drift
     @test all([isequal(Symbolics.substitute(f[i], dp.poly_vars), dp.f[i]) for i in eachindex(f)])

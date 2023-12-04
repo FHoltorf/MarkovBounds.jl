@@ -1,5 +1,3 @@
-using Symbolics, LinearAlgebra, MarkovBounds
-
 function test_JumpDiffusionProcess(jpd, a, h, f, σ)
     # test propensities
     @test all([isequal(Symbolics.substitute(a[i], jpd.poly_vars), jpd.a[i]) for i in eachindex(a)])

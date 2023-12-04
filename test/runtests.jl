@@ -1,6 +1,11 @@
 using MarkovBounds
 using Catalyst
+using Symbolics
 using Test
+using COSMO # Hypatia 
+using LinearAlgebra
+
+solver = optimizer_with_attributes(COSMO.Optimizer, "verbose" => false)
 
 include("reaction_process.jl")
 include("langevin_process.jl")
