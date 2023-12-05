@@ -122,7 +122,6 @@ constructor returns `DiffusionProcess` object with fields
 * `controls` - vector of control variables (empty if there are none)
 * `poly_vars` - Dict mapping symbolic variables created by Catalyst.jl or ModelingToolkit.jl to generated Variable placeholders.
 """
-
 @concrete mutable struct DiffusionProcess <: MarkovProcess
     x  # state
     f # drift
