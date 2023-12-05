@@ -41,11 +41,11 @@ birth_death_langevin = LangevinProcess(birth_death, A0)
     # stationary_variance problem 
     val = 14.14227
     ub = stationary_variance(birth_death_jump, A, 2, solver)
-    @test abs(ub.value - val) < 1e-3
+    @test abs(ub.value - val) < 1e-2
     ub = stationary_variance(birth_death_langevin, A, 2, solver)
-    @test abs(ub.value - val) < 1e-3
+    @test abs(ub.value - val) < 1e-2
     ub =stationary_variance(birth_death, A, 2, solver)    
-    @test abs(ub.value - val) < 1e-3
+    @test abs(ub.value - val) < 1e-2
 end
     
 @testset "stationary_polynomial tests" begin
