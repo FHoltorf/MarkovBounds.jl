@@ -59,7 +59,7 @@ end
 end
 
 @testset "stationary_variance tests" begin
-    ub = stationary_variance(lotka_volterra, x[1]+x[2], 2, solver)
+    ub = stationary_variance(lotka_volterra, x[1]+x[2], 4, solver)
     @test ub.value >= 0
 end
 
