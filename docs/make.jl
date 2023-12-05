@@ -13,6 +13,7 @@ makedocs(;
         canonical="https://FHoltorf.github.io/MarkovBounds.jl",
         assets=String[],
     ),
+    warnonly = Documenter.except(),
     pages=[
         "Home" => "index.md",
         "Background" => "background.md",
