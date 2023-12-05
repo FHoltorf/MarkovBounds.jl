@@ -58,7 +58,7 @@ function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
     nT = length(trange)
     Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
     T = @set(t >= 0 && t <= 1)
-
+	
     model = SOSModel(solver)
     w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
@@ -67,7 +67,6 @@ function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
     for v in vertices(P.graph)
         add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], intersect(T, CP.U), Δt, w, - CP.Objective.l)
     end
-
     for v in vertices(P.graph)
         add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT, v], CP.Objective.m, v)
     end

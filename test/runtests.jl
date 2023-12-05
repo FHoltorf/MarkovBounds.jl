@@ -1,5 +1,11 @@
-using MarkovBounds, Catalyst
+using MarkovBounds
+using Catalyst
+using Symbolics
 using Test
+using SCS # Hypatia 
+using LinearAlgebra
+
+solver = optimizer_with_attributes(SCS.Optimizer, "verbose" => false)
 
 include("reaction_process.jl")
 include("langevin_process.jl")

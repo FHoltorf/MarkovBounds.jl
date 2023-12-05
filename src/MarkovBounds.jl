@@ -2,22 +2,18 @@ module MarkovBounds
 
 using Reexport
 using SumOfSquares
+using ConcreteStructs
 
 # SumOfSquares and DynamicPolynomials are the main modeling tools to set up
 # moment bounding problems --> Reexport those
 @reexport using SumOfSquares
 
-@reexport using DynamicPolynomials: @polyvar, PolyVar, AbstractPolynomialLike,
-                                    Polynomial, subs, polynomial, differentiate,
-                                    MonomialVector, maxdegree, polyarrayvar
-using DynamicPolynomials: Term as DPTerm
+@reexport using DynamicPolynomials
 
-using Catalyst: @reaction_network, @parameters, species, speciesmap,
-                reactions, paramsmap, prodstoichmat, substoichmat,
-                ReactionSystem, Reaction
+using Catalyst: species, speciesmap, reactions, paramsmap, prodstoichmat, substoichmat, ReactionSystem, Reaction
 
-using Symbolics: Num, expand, Arr, ArrayShapeCtx
-using SymbolicUtils: Pow, Mul, Add, Sym, Term, arguments
+using Symbolics: Num, expand, Arr, ArrayShapeCtx, unwrap, istree, PolyForm
+using SymbolicUtils: Pow, Mul, Add, Sym, Term, arguments, BasicSymbolic
 using Graphs: edges, vertices, SimpleGraph, add_edge!, add_vertex!, Edge
 using MetaGraphs: MetaGraph, MetaDiGraph, props, set_prop!
 using Base.Iterators: product
@@ -28,8 +24,16 @@ import Parameters: @unpack
 import MultivariatePolynomials.polynomial
 import SumOfSquares.SemialgebraicSets.inequalities
 
-const PV = PolyVar
+# Default types (there ought to be a better way to handle this)
+const DynPoly = DynamicPolynomials
+const COMMUTATIVE = DynPoly.Commutative{DynPoly.CreationOrder}
+const POLYORDER = Graded{LexOrder}
+const COEFFTYPE = Float64 
+
 const APL = AbstractPolynomialLike
+const POLY = DynPoly.Polynomial{COMMUTATIVE, POLYORDER, COEFFTYPE}
+const VAR = DynPoly.Variable{COMMUTATIVE, POLYORDER}
+const MONO = DynPoly.Monomial{COMMUTATIVE, POLYORDER}
 
 include("distributed.jl")
 include("processes.jl")
