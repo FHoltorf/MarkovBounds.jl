@@ -1,6 +1,6 @@
 export grid_graph, grid_partition, discrete_grid_graph, discrete_grid_partition, props
 
-function grid_graph(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor = zeros(Int64, length(lb)))
+function grid_graph(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor = zeros(Int64, length(lb)), X_base = FullSpace())
     @assert all(lb .<= ub) "lower boundary must be smaller than upper boundary"
     @assert all(n .>= 1) "minimum one partition element per dimension required"
     x_ranges = []
@@ -32,17 +32,17 @@ function grid_graph(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor 
             push!(x_ranges, boundaries)
         end
     end
-    return grid_graph(x, x_ranges)
+    return grid_graph(x, x_ranges; X_base = X_base)
 end
 
-function grid_graph(x, x_ranges)
+function grid_graph(x, x_ranges; X_base = FullSpace())
     n = length.(x_ranges) .- 1
     nv = prod(n)
 
     mg = MetaDiGraph(nv)
     for i in 1:nv
         idx = invert_index(i, n)
-        subset = FullSpace()
+        subset = X_base
         for k in 1:length(idx)
             if !isinf(x_ranges[k][idx[k]])
                 subset = intersect(subset, @set(x[k] >= x_ranges[k][idx[k]]))
@@ -57,7 +57,7 @@ function grid_graph(x, x_ranges)
                 idx[k] += 1
                 j = linearize_index(idx, n)
                 add_edge!(mg, i, j)
-                set_prop!(mg, Edge(i,j), :interface, [@set(x[k] == x_ranges[k][idx[k]])])
+                set_prop!(mg, Edge(i,j), :interface, [intersect(@set(x[k] == x_ranges[k][idx[k]]), X_base)])
                 idx[k] -= 1
             end
         end
@@ -82,12 +82,12 @@ function grid_graph(x, x_ranges)
 end
 
 
-function grid_partition(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor = zeros(Int64, length(lb)))
-    return Partition(grid_graph(x, lb, ub, n; inf_top = inf_top, inf_floor = inf_floor)...)
+function grid_partition(x, lb, ub, n; inf_top = zeros(Int64, length(ub)), inf_floor = zeros(Int64, length(lb)), X_base = FullSpace())
+    return Partition(grid_graph(x, lb, ub, n; inf_top = inf_top, inf_floor = inf_floor, X_base = X_base)...)
 end
 
-function grid_partition(x, x_ranges)
-    return Partition(grid_graph(x, x_ranges)...)
+function grid_partition(x, x_ranges, X_base = FullSpace())
+    return Partition(grid_graph(x, x_ranges, X_base = X_base)...)
 end
 
 function check_membership(X::AbstractSemialgebraicSet, x_var, x)
@@ -123,8 +123,8 @@ function complement(X::BasicSemialgebraicSet, H = FullSpace())
     ineqs = inequalities(X)
     m = length(ineqs)
     for i in 1:m
-        push!(Ys, intersect(H, BasicSemialgebraicSet(algebraicset(Polynomial{true, Float64}[]),
-                                                    vcat(ineqs[1:end-1], -ineqs[end]))))
+        push!(Ys, intersect(H, BasicSemialgebraicSet(algebraic_set(POLY[]),
+                                                     vcat(ineqs[1:end-1], -ineqs[end]))))
         pop!(ineqs)
     end
     return Ys
@@ -134,7 +134,7 @@ function discrete_grid_graph(JP::JumpProcess, x_ranges, Xc)
     x_var = JP.x
     partition_graph = MetaDiGraph()
     discrete_states = collect(product(x_ranges...))
-    state_to_vertex = Dict()
+    state_to_vertex = StateDict(;tol=1e-3)
     n_discrete = length(discrete_states)
     for i in eachindex(discrete_states)
         add_vertex!(partition_graph, :cell, @singleton(discrete_states[i]))
@@ -151,7 +151,7 @@ function discrete_grid_graph(JP::JumpProcess, x_ranges, Xc)
     end
 
     get_vertex = function (x)
-        if x in keys(state_to_vertex)
+        if closeto(x, state_to_vertex)
             vertex = state_to_vertex[x]
         elseif check_membership(JP.X, x_var, x)
             vertex = n_discrete + 1 
@@ -174,7 +174,7 @@ function neighborhood(state, JP::JumpProcess, state_to_vertex)
     neighbors = []
     for i in eachindex(rev_jumps)
         origin = [jump_component(x_var => state) for jump_component in rev_jumps[i]]
-        if JP.a[i](x_var => origin) != 0 && !(origin in keys(state_to_vertex)) && check_membership(JP.X, x_var, origin)
+        if subs(JP.a[i], x_var => origin) != 0 && !closeto(origin, state_to_vertex) && check_membership(JP.X, x_var, origin)
             push!(neighbors, origin)
         end
     end
@@ -186,7 +186,7 @@ function neighborhood(state, JP::JumpProcess, rev_jumps, state_to_vertex)
     neighbors = []
     for i in eachindex(rev_jumps)
         origin = round.([jump_component(x_var => state) for jump_component in rev_jumps[i]], digits = 8)
-        if JP.a[i](x_var => origin) != 0 && !(origin in keys(state_to_vertex)) && check_membership(JP.X, x_var, origin)
+        if subs(JP.a[i], x_var => origin) != 0 && !closeto(origin, state_to_vertex) && check_membership(JP.X, x_var, origin)
             push!(neighbors, origin)
         end
     end

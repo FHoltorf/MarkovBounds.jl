@@ -9,6 +9,13 @@ Base.show(io::IO, MP::JumpProcess) = println(io,
 Base.show(io::IO, RP::ReactionProcess) = println(io,
 "Reaction Process is analogous to following $(RP.JumpProcess)")
 
+Base.show(io::IO, MP::DriftProcess) = println(io,
+"Drift Process
+-----------------------
+  States: $(print_wo_type(MP.x))
+  Drift: $(print_wo_type(MP.f))
+  State space: $(MP.X)")
+
 Base.show(io::IO, MP::DiffusionProcess) = println(io,
 "Diffusion Process
 -----------------------

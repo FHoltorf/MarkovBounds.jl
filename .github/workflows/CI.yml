@@ -1,7 +1,7 @@
 name: CI
 on:
   - push
-  - pull_request
+  #- pull_request
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -10,13 +10,13 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.8'
+          - '1.10.0-beta2'
           #- 'nightly'
         os:
           - ubuntu-latest
         arch:
           - x64
-          - x86
+          #- x86
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1

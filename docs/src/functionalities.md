@@ -6,6 +6,7 @@ CurrentModule = MarkovBounds
 ## Problem Specification
 ```@docs
 MarkovProcess
+DriftProcess
 JumpProcess
 ReactionProcess
 DiffusionProcess
@@ -54,4 +55,19 @@ transient_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, 
 ## Bounds on Stochastic Optimal Control Problems
 ```@docs
 optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
+```
+
+## API
+```@autodocs
+Modules = [MarkovBounds]
+Pages  =  ["processes.jl",
+           "utils.jl",
+           "symbolics.jl",
+           "sos_programs_stationary.jl", 
+           "sos_programs_transient.jl", 
+           "sos_programs_control.jl",
+           "distributed.jl",
+           "distributed_utils.jl",
+           "problem_setup.jl",
+           "print_routines.jl"]
 ```

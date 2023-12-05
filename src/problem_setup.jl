@@ -25,7 +25,7 @@ function add_coupling_constraints!(model::Model, MP::MarkovProcess, e::Edge, P::
     else
         Xs = props(P.graph, e)[:interface]
         if Xs isa AbstractVector
-            for X in Xs # TODO FIX THIS
+            for X in Xs
                 @constraint(model, w[e.dst] - w[e.src] == 0, domain = X)
             end
         else
@@ -72,7 +72,7 @@ function add_dynamics_constraints!(model::Model, MP::MarkovProcess, v::Int, P::P
                                    Δt::AbstractVector, w, rhs; ρ::Real = 0)
     nT = length(Δt)
     t = MP.iv
-    model.obj_dict[Symbol("dynamics_$v")] = @constraint(model, [k in 1:nT, X in space_domain], extended_inf_generator(MP, w[k, v]; scale = Δt[k]) - ρ*w[k, v] >= Δt[k]*rhs, domain = XT = intersect(X,time_domain), base_name = "dynamics_$v")
+    model.obj_dict[Symbol("dynamics_$v")] = @constraint(model, [k in 1:nT, X in space_domain], extended_inf_generator(MP, w[k, v]; scale = Δt[k]) - ρ*w[k, v] >= Δt[k]*rhs, domain = intersect(X,time_domain), base_name = "dynamics_$v")
     model.obj_dict[Symbol("temporal_coupling_$v")] = @constraint(model, [k in 2:nT, X in space_domain], subs(w[k, v], t => 0) - subs(w[k-1,v], t => 1) >= 0, domain = X, base_name = "temporal_coupling_$v")
 end
 

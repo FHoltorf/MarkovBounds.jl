@@ -1,6 +1,5 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-MarkovBounds = "153e1d4e-790f-4e3f-9036-fea9f57be94e"
 
 [compat]
-Documenter = "0.26.3"
+Documenter = "1"

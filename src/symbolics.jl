@@ -1,8 +1,8 @@
-polynomialize_vars(vars::AbstractArray) = Dict(v.val => PolyVar{true}(_name(v.val)) for v in vars)
-polynomialize_vars(var) = Dict(var.val => PolyVar{true}(_name(v.val)))
+polynomialize_vars(vars::AbstractArray) = Dict(unwrap(v) => _variable(_name(unwrap(v))) for v in vars)
+polynomialize_vars(var) = Dict(unwrap(var) => _variable(_name(unwrap(var))))
 function polynomialize_vars(x::Arr)  
-    x_dp = polyarrayvar(PolyVar{true}, x.value.name, x.value.metadata[ArrayShapeCtx]...)
-    return Dict(x[i].val => x_dp[i] for i in 1:length(x_dp))
+    x_dp = DynPoly.polyarrayvar(COMMUTATIVE, POLYORDER, x.value.name, x.value.metadata[ArrayShapeCtx]...)
+    return Dict(unwrap(x[i]) => x_dp[i] for i in eachindex(x_dp))
 end
 function polynomialize_vars(vars_args...)
     var_to_poly = Dict()
@@ -11,31 +11,52 @@ function polynomialize_vars(vars_args...)
     end
     return var_to_poly
 end
-_name(v::Sym) = string(v.name)
-_name(v::Term) = string(v.arguments[1], "[", [string(arg,",") for arg in v.arguments[2:end]]..., "]")
-
-# need to find a better check if expression has been expanded. 
-# Here we assume that every expression will be supplied as Num.
-# If expression is supplied as NON-EXPANDED SymbolicUtils object, this whole transformation may fail
-polynomialize_expr(ex::Num, vars::Dict) = polynomialize_expr(expand(ex).val, vars)
-polynomialize_expr(ex::Pow, vars::Dict) = vars[ex.base]^ex.exp
-polynomialize_expr(ex::Mul, vars::Dict) = prod(polynomialize_expr(sub_ex, vars) for sub_ex in arguments(ex))
-polynomialize_expr(ex::Add, vars::Dict) = sum(polynomialize_expr(sub_ex, vars) for sub_ex in arguments(ex))
-polynomialize_expr(ex::Sym, vars::Dict) = vars[ex]
-polynomialize_expr(ex::Term, vars::Dict) = vars[ex]
-polynomialize_expr(ex::Number, ::Dict) = ex
-
-function polynomialize_expr(exs::Array, vars::Dict)
-    poly_exs = Array{Polynomial{true, Float64}}(undef, size(exs))
-    for (i, ex) in enumerate(exs)
-        poly_exs[i] = polynomialize_expr(expand(ex), vars)
+#_name(v::Sym) = string(nameof(unwrap(v)))
+#_name(v<:BasicSymbolic) = string
+#_name(v::Term) = string(v.arguments[1], "[", [string(arg,",") for arg in v.arguments[2:end]]..., "]")
+_name(v::Num) = _name(unwrap(v))
+function _name(v)
+    if istree(v)
+        args = arguments(v)
+        var_name = string(nameof(args[1]), "[")
+        for arg in args[2:end-1]
+            var_name *= string(arg, ",")
+        end
+        var_name *= string(args[end], "]")
+        return var_name
+    else
+        return string(nameof(v))
     end
-    return poly_exs
 end
 
+_variable(v::String) = Variable(v, COMMUTATIVE, POLYORDER)
+
+# need to find a better check if expression has been expanded.  
+# Here we assume that every expression will be supplied as Num.
+# If expression is supplied as NON-EXPANDED SymbolicUtils object, this whole transformation may fail
+polynomialize_expr(ex::Num, vars::Dict) = polynomialize_expr(PolyForm(unwrap(expand(ex))), vars)
+polynomialize_expr(ex::BasicSymbolic, vars::Dict) = polynomialize_expr(PolyForm(unwrap(expand(ex))), vars)
+function polynomialize_expr(pform::PolyForm, vars::Dict)
+    w, pvars, psym = pform.p, pform.pvar2sym, pform.sym2term
+    Π = [v => (pvars[v] in keys(psym) ? vars[psym[pvars[v]][1]] : vars[pvars[v]]) for v in variables(w)]
+    return subs(w, Π...)
+end
+
+polynomialize_expr(p::Number, vars::Dict) = polynomial(p)
+
+# polynomialize_expr(ex::Num, vars::Dict) = polynomialize_expr(expand(unwrap(ex)), vars)
+# polynomialize_expr(ex::Pow, vars::Dict) = vars[ex.base]^ex.exp
+# polynomialize_expr(ex::Mul, vars::Dict) = prod(polynomialize_expr(sub_ex, vars) for sub_ex in arguments(ex))
+# polynomialize_expr(ex::Add, vars::Dict) = sum(polynomialize_expr(sub_ex, vars) for sub_ex in arguments(ex))
+# polynomialize_expr(ex::Sym, vars::Dict) = vars[ex]
+# polynomialize_expr(ex::Term, vars::Dict) = vars[ex]
+# polynomialize_expr(ex::Number, ::Dict) = ex
+
+polynomialize_expr(exs::Array, vars::Dict) = POLY[polynomialize_expr(ex, vars) for ex in exs]
+
 function polynomialize_set(S::Vector, vars::Dict)
-    ineq = Polynomial{true,Float64}[]
-    eq = Polynomial{true,Float64}[]
+    ineq = POLY[]
+    eq = POLY[]
     for entry in S
         polys = polynomialize_expr(entry.val.arguments, vars)
         if entry.val.f == >=
@@ -46,21 +67,32 @@ function polynomialize_set(S::Vector, vars::Dict)
             push!(eq, polys[1] - polys[2])
         end
     end
-    return BasicSemialgebraicSet(algebraicset(eq), ineq)
+    return BasicSemialgebraicSet(algebraic_set(eq), ineq)
 end
 
 polynomialize_set(S::Num, vars::Dict) = polynomialize_set([S], vars)
 
 ## Process Constructors
+# Drift Process
+function DriftProcess(x::T, f::Vector{Num}, X = []; iv = [], controls = []) where T <: Union{Arr, Vector{Num}}
+    poly_vars = polynomialize_vars(x, controls, iv)
+    f = polynomialize_expr(f, poly_vars)
+    X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
+    poly_x = [poly_vars[x[i]] for i in eachindex(x)]
+    poly_iv = isempty(iv) ? _variable("t") : poly_vars[iv]
+    poly_controls = [poly_vars[controls[i]] for i in eachindex(controls)]
+    return DriftProcess(poly_x, f, X_poly; poly_vars = poly_vars, iv = poly_iv, controls = poly_controls)
+end
+
 # Jump Processes
 function JumpProcess(x::T, a::Vector{Num}, h::Vector{Vector{Num}}, X = []; iv = [], controls = []) where T <: Union{Arr, Vector{Num}}
     poly_vars = polynomialize_vars(x, controls, iv)
     a = polynomialize_expr(a, poly_vars)
     h = [polynomialize_expr(hi, poly_vars) for hi in h]
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
-    poly_x = PV{true}[poly_vars[x[i]] for i in eachindex(x)]
-    poly_iv = isempty(iv) ? PV{true}("t") : poly_vars[iv]
-    poly_controls = PV{true}[poly_vars[controls[i]] for i in eachindex(controls)]
+    poly_x = [poly_vars[x[i]] for i in eachindex(x)]
+    poly_iv = isempty(iv) ? _variable("t") : poly_vars[iv]
+    poly_controls = [poly_vars[controls[i]] for i in eachindex(controls)]
     return JumpProcess(poly_x, a, h, X_poly; poly_vars = poly_vars, iv = poly_iv, controls = poly_controls)
 end
 
@@ -78,8 +110,8 @@ function DiffusionProcess(x::T, f::Vector{Num}, σ::Matrix{Num}, X = []; iv = []
     σ = polynomialize_expr(σ, poly_vars)
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
     poly_x = [poly_vars[x[i]] for i in eachindex(x)]
-    poly_iv = isempty(iv) ? PV{true}("t") : poly_vars[iv]
-    poly_controls = PV{true}[poly_vars[controls[i]] for i in eachindex(controls)]
+    poly_iv = isempty(iv) ? _variable("t") : poly_vars[iv]
+    poly_controls = [poly_vars[controls[i]] for i in eachindex(controls)]
     return DiffusionProcess(poly_x, f, σ, X_poly, poly_vars = poly_vars, iv = poly_iv, controls = poly_controls)
 end
 
@@ -95,8 +127,8 @@ function JumpDiffusionProcess(x::T, a::Vector{Num}, h::Vector{Vector{Num}}, f::V
     σ = polynomialize_expr(σ, poly_vars)
     X_poly = isempty(X) ? FullSpace() : polynomialize_set(X, poly_vars)
     poly_x = [poly_vars[x[i]] for i in eachindex(x)]
-    poly_iv = isempty(iv) ? PV{true}("t") : poly_vars[iv]
-    poly_controls = PV{true}[poly_vars[controls[i]] for i in eachindex(controls)]
+    poly_iv = isempty(iv) ? _variable("t") : poly_vars[iv]
+    poly_controls = [poly_vars[controls[i]] for i in eachindex(controls)]
     return JumpDiffusionProcess(poly_x, a, h, f, σ, X_poly, poly_vars = poly_vars, iv = poly_iv, controls = poly_controls)
 end
 
