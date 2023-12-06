@@ -12,7 +12,9 @@ horizon ``[0,T]``, i.e., `T = trange[end]`. Populating `trange` and increasing `
 tightening effect on the bound furnished by the assembled SOS program.
 """
 function transient_pop(MP::MarkovProcess, μ0::Dict, p::APL, d::Int,
-                       trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
+                       trange::AbstractVector{<:Real}, solver, 
+					   P::Partition = trivial_partition(MP.X);
+					   inner_approx = SOSCone)
     if trange[1] == 0
         trange = trange[2:end]
     end
@@ -22,6 +24,7 @@ function transient_pop(MP::MarkovProcess, μ0::Dict, p::APL, d::Int,
     T  = @set(t >= 0 && t <= 1)
 
     model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
     w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
                     @variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
@@ -62,19 +65,23 @@ it maps monomials to the respective moments of the initial distribution.
 horizon ``[0,T]``, i.e., `T = trange[end]`. Populating `trange` and increasing `d` improves
 the computed bound.
 """
-function transient_polynomial(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
-    model, w = transient_pop(MP, μ0, p, d, trange, solver, P)
+function transient_polynomial(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange::AbstractVector{<:Real}, solver, 
+							 P::Partition = trivial_partition(MP.X);
+							 inner_approx = SOSCone)
+    model, w = transient_pop(MP, μ0, p, d, trange, solver, P, inner_approx=inner_approx)
     optimize!(model)
     return Bound(objective_value(model), model, P, dual_poly(w, MP.iv, trange))
 end
 
-function transient_polynomial(MP::MarkovProcess, μ0::Dict, p::Num, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
+function transient_polynomial(MP::MarkovProcess, μ0::Dict, p::Num, d::Int, trange::AbstractVector{<:Real}, solver, 
+							  P::Partition = trivial_partition(MP.X);
+							  inner_approx = SOSCone)
 	if μ0[first(keys(μ0))] isa Dict
 		μ0 = Dict(v => Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[v][mono] for mono in keys(μ0[v])) for v in keys(μ0))
 	else
 		μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[mono] for mono in keys(μ0))
 	end
-	return transient_polynomial(MP, μ0, polynomialize_expr(p, MP.poly_vars), d, trange, solver, P)
+	return transient_polynomial(MP, μ0, polynomialize_expr(p, MP.poly_vars), d, trange, solver, P, inner_approx=inner_approx)
 end
 
 @doc raw"""
@@ -88,20 +95,24 @@ trange is an **ordered** collection of time points used to discretize the time
 horizon ``[0,T]``, i.e., `T = trange[end]`. Populating `trange` and increasing `d` improves
 the computed bounds.
 """
-function transient_mean(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
-    lb = transient_polynomial(MP, μ0, p, d, trange, solver)
-    ub = transient_polynomial(MP, μ0, -p, d, trange, solver)
+function transient_mean(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange::AbstractVector{<:Real}, solver, 
+						P::Partition = trivial_partition(MP.X);
+						inner_approx = SOSCone)
+    lb = transient_polynomial(MP, μ0, p, d, trange, solver, P, inner_approx=inner_approx)
+    ub = transient_polynomial(MP, μ0, -p, d, trange, solver, P, inner_approx=inner_approx)
 	ub.value *= -1
     return lb, ub
 end
 
-function transient_mean(MP::MarkovProcess, μ0::Dict, p::Num, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
+function transient_mean(MP::MarkovProcess, μ0::Dict, p::Num, d::Int, trange::AbstractVector{<:Real}, solver, 
+						P::Partition = trivial_partition(MP.X);
+						inner_approx = SOSCone)
 	if μ0[first(keys(μ0))] isa Dict
 		μ0 = Dict(v => Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[v][mono] for mono in keys(μ0[v])) for v in keys(μ0))
 	else
 		μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[mono] for mono in keys(μ0))
 	end
-	return transient_mean(MP, μ0, polynomialize_expr(p, MP.poly_vars), d, trange, solver, P)
+	return transient_mean(MP, μ0, polynomialize_expr(p, MP.poly_vars), d, trange, solver, P, inner_approx=inner_approx)
 end
 
 """
@@ -124,10 +135,11 @@ constraints (via LP).
 """
 function transient_mean(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Number}, solver,
 		  				scales = Dict(s => 1 for s in species(rn));
-						params::Dict = Dict(), auto_scaling = false)
+						params::Dict = Dict(), auto_scaling = false, 
+						inner_approx = SOSCone)
 	RP, S0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
 	μ0 = init_moments(RP.JumpProcess.x, S0, d + maximum(maxdegree.(RP.JumpProcess.a)))
- 	return transient_mean(RP.JumpProcess, μ0, RP.species_to_state[S], d, trange, solver)
+ 	return transient_mean(RP.JumpProcess, μ0, RP.species_to_state[S], d, trange, solver, inner_approx=inner_approx)
 end
 
 
@@ -137,7 +149,9 @@ end
 returns an **upper** bound on ``\mathbb{E}[v(x(T))^2] - \mathbb{E}[v(x(T))]^2`` where ``v`` is a polynomial
 and ``x(T)`` the state of the Markov process `MP` at time `T = trange[end]`.
 """
-function transient_variance(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
+function transient_variance(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange::AbstractVector{<:Real}, solver, 
+							P::Partition = trivial_partition(MP.X);
+							inner_approx = SOSCone)
 	if trange[1] == 0
 		trange = trange[2:end]
 	end
@@ -147,6 +161,7 @@ function transient_variance(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange
 	T  = @set(t >= 0 && t <= 1)
 	
 	model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
                     @variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
@@ -170,13 +185,15 @@ function transient_variance(MP::MarkovProcess, μ0::Dict, p::APL, d::Int, trange
 	return Bound(-objective_value(model), model, P, dual_poly(w, t, trange))
 end
 
-function transient_variance(MP::MarkovProcess, μ0::Dict, p::Num, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
+function transient_variance(MP::MarkovProcess, μ0::Dict, p::Num, d::Int, trange::AbstractVector{<:Real}, solver, 
+							P::Partition = trivial_partition(MP.X);
+							inner_approx = SOSCone)
 	if μ0[first(keys(μ0))] isa Dict
 		μ0 = Dict(v => Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[v][mono] for mono in keys(μ0[v])) for v in keys(μ0))
 	else
 		μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[mono] for mono in keys(μ0))
 	end
-	return transient_variance(MP, μ0, polynomialize_expr(p, MP.poly_vars), d, trange, solver, P)
+	return transient_variance(MP, μ0, polynomialize_expr(p, MP.poly_vars), d, trange, solver, P, inner_approx=inner_approx)
 end
 
 """
@@ -199,10 +216,11 @@ constraints (via LP).
 """
 function transient_variance(rn::ReactionSystem, S0::Dict, S, d::Int, trange::AbstractVector{<:Real}, solver,
 						    scales = Dict(s => 1 for s in species(rn));
-							auto_scaling = false, params::Dict = Dict())
+							auto_scaling = false, params::Dict = Dict(),
+							inner_approx = SOSCone)
 	RP, S0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
 	μ0 = init_moments(RP.JumpProcess.x, S0, d + maximum(maxdegree.(RP.JumpProcess.a)))
- 	return transient_variance(RP.JumpProcess, μ0, RP.species_to_state[S], d, trange, solver)
+ 	return transient_variance(RP.JumpProcess, μ0, RP.species_to_state[S], d, trange, solver, inner_approx=inner_approx)
 end
 
 @doc raw"""
@@ -211,7 +229,9 @@ end
 returns an **upper** bound on the volume of the covariance ellipsoid ``\text{det}(\mathbb{E}[v(x(T))v(x(T))^\top] - \mathbb{E}[v(x(T))] \mathbb{E}[v(x(T))]^\top)``,
 where ``v`` is a polynomial and ``x(T)`` the state of the Markov process `MP` at time `T = trange[end]`.
 """
-function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, p::Vector{<:APL}, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
+function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, p::Vector{<:APL}, d::Int, trange::AbstractVector{<:Real}, solver, 
+										P::Partition = trivial_partition(MP.X);
+										inner_approx = SOSCone)
 	if trange[1] == 0
 		trange = trange[2:end]
 	end
@@ -222,6 +242,7 @@ function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, p::Vector{
 	n = length(p)
 
 	model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
                     @variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
@@ -252,13 +273,15 @@ function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, p::Vector{
 	return Bound(exp(-objective_value(model)), model, P, dual_poly(w, t, trange))
 end
 
-function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{Num}, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
+function transient_covariance_ellipsoid(MP::MarkovProcess, μ0::Dict, v::Vector{Num}, d::Int, trange::AbstractVector{<:Real}, solver,
+										P::Partition = trivial_partition(MP.X);
+										inner_approx = SOSCone)
 	if μ0[first(keys(μ0))] isa Dict
 		μ0 = Dict(v => Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[v][mono] for mono in keys(μ0[v])) for v in keys(μ0))
 	else
 		μ0 = Dict(polynomialize_expr(mono, MP.poly_vars) => μ0[mono] for mono in keys(μ0))
 	end
-	return transient_covariance_ellipsoid(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver, P)
+	return transient_covariance_ellipsoid(MP, μ0, polynomialize_expr(v, MP.poly_vars), d, trange, solver, P, inner_approx=inner_approx)
 end
 
 """
@@ -281,21 +304,24 @@ constraints (via LP).
 """
 function transient_covariance_ellipsoid(rn::ReactionSystem, S0::Dict, S::AbstractVector, d::Int, trange::AbstractVector{<:Real}, solver,
 										scales = Dict(s => 1 for s in species(rn));
-										auto_scaling = false, params::Dict = Dict())
+										auto_scaling = false, params::Dict = Dict(),
+										inner_approx = SOSCone)
 	RP, x0 = reaction_process_setup(rn, S0, scales = scales, auto_scaling = auto_scaling, solver = solver, params = params)
 	μ0 = init_moments(RP.JumpProcess.x, x0, d + maximum(maxdegree.(RP.JumpProcess.a)))
- 	return transient_covariance_ellipsoid(RP.JumpProcess, μ0, [RP.species_to_state[x] for x in S], d, trange, solver)
+ 	return transient_covariance_ellipsoid(RP.JumpProcess, μ0, [RP.species_to_state[x] for x in S], d, trange, solver, inner_approx=inner_approx)
 end
 
 
 # distributed 
 function transient_indicator(MP::MarkovProcess, μ0::Dict, v_target::Int, d::Int,
-							 trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X); sense = 1)
-	return transient_indicator(MP, μ0, [v_target], d, trange, solver, P, sense = sense)
+							 trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X); 
+							 sense = 1, inner_approx = SOSCone)
+	return transient_indicator(MP, μ0, [v_target], d, trange, solver, P, sense = sense, inner_approx=inner_approx)
 end
 
 function transient_indicator(MP::MarkovProcess, μ0::Dict, v_target::AbstractArray{Int}, d::Int,
-							trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X); sense = 1)
+							trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X); 
+							sense = 1, inner_approx = SOSCone)
 	if trange[1] == 0
 		trange = trange[2:end]
 	end
@@ -305,6 +331,7 @@ function transient_indicator(MP::MarkovProcess, μ0::Dict, v_target::AbstractArr
 	T  = @set(t >= 0 && t <= 1)
 
 	model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
 						@variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
 						@variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
@@ -329,7 +356,9 @@ end
 
 # add transient probability mass
 function approximate_transient_measure(MP::MarkovProcess, μ0::Dict, p::APL, d::Int,
-									   trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(MP.X))
+									   trange::AbstractVector{<:Real}, solver, 
+									   P::Partition = trivial_partition(MP.X);
+									   inner_approx = SOSCone)
 	if trange[1] == 0
 		trange = trange[2:end]
 	end
@@ -339,6 +368,7 @@ function approximate_transient_measure(MP::MarkovProcess, μ0::Dict, p::APL, d::
 	T  = @set(t >= 0 && t <= 1)
 
 	model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
 						@variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
 						@variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
@@ -376,7 +406,7 @@ end
 
 returns approximate values for the transient measure which maximizes the entropy on the partition `P` at time t.  
 """
-function max_entropy_measure(MP::MarkovProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition)
+function max_entropy_measure(MP::MarkovProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition; inner_approx = SOSCone)
 	if trange[1] == 0
 		trange = trange[2:end]
 	end
@@ -386,6 +416,7 @@ function max_entropy_measure(MP::MarkovProcess, μ0::Dict, d::Int, trange::Abstr
 	T  = @set(t >= 0 && t <= 1)
 
 	model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
 						@variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
 						@variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)

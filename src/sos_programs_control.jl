@@ -1,20 +1,29 @@
 export optimal_control, infinite_horizon_control
 
 """
-	optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
+	optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver,
+					P::Partition = trivial_partition(CP.MP.X);
+					inner_approx = SOSCone)
 
 returns a **lower** bound on the objective value of the (stochastic) optimal
-control problem specified by CP. `μ0` encodes information about the distribution of
+control problem specified by `CP`. `μ0` encodes information about the distribution of
 the initial state of the process; specifically, `μ0` maps a given monomial to the
-corresponding moment of the initial distribution. trange refers to an *ordered*
-set of time points discretizing the control horizon. trange[end] should coincide
+corresponding moment of the initial distribution. `trange` refers to an *ordered*
+set of time points discretizing the control horizon. `trange[end]` should coincide
 with the end of the control horizon, i.e., `trange[end] = Inf` in case of an infinite
-horizon problem. The bound is computed via a SOS program of degree d solved with
-an appropriate method given by solver.
+horizon problem. `P` is the partition of the state space X and defaults to the trivial partition
+with a singular element coinciding with X itself. 
+`inner_approx` is the the inner approximation of the cone of non-negative 
+polynomials used to construct the relaxations. By default `inner_approx=SOSCone` and other choices
+are `DSOSCone` and `SDSOSCone` referring to the cones of diagonally dominant and scaled diagonally 
+dominant sum-of-squares polynomials, respectively. The bound is computed via a SOS program of degree 
+`d` solved with an appropriate method given by solver.
 
 The bound can be tightened by populating trange or increasing `d`.
 """
-function optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
+function optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, 
+						 P::Partition = trivial_partition(CP.MP.X);
+						 inner_approx = SOSCone)
 	if trange[1] == 0
 		trange = trange[2:end]
 	end
@@ -22,29 +31,33 @@ function optimal_control(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstract
 		trange = trange[1:end-1]
 	end
 	if isinf(CP.T)
-		model, w, w∞ = infinite_horizon_control(CP, μ0, d, trange, solver, P)
+		model, w, w∞ = infinite_horizon_control(CP, μ0, d, trange, solver, P, inner_approx=inner_approx)
 		optimize!(model)
 		bound = Bound(objective_value(model), model, P, merge(dual_poly(w, CP.MP.iv, trange), dual_poly(w∞)))
 	else
-		model, w = finite_horizon_control(CP, μ0, d, trange, solver, P)
+		model, w = finite_horizon_control(CP, μ0, d, trange, solver, P, inner_approx=inner_approx)
 		optimize!(model)
 		bound = Bound(objective_value(model), model, P, dual_poly(w, CP.MP.iv, trange))
 	end
 	return bound
 end
 
-function optimal_control(CP::ControlProcess, x0::Vector, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
-	return optimal_control(CP, init_moments(CP.MP.x,x0,d), d, trange, solver, P)
+function optimal_control(CP::ControlProcess, x0::Vector, d::Int, trange::AbstractVector{<:Real}, solver, 
+						 P::Partition = trivial_partition(CP.MP.X);
+						 inner_approx = SOSCone)
+	return optimal_control(CP, init_moments(CP.MP.x,x0,d), d, trange, solver, P, inner_approx=inner_approx)
 end
 
 ## Finite horizon control problems
-function finite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
+function finite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, 
+								P::Partition = trivial_partition(CP.MP.X);
+								inner_approx = SOSCone)
 	if isa(CP.Objective, LagrangeMayer)
-		model, w = finite_horizon_LM(CP, μ0, d, trange, solver, P)
+		model, w = finite_horizon_LM(CP, μ0, d, trange, solver, P; inner_approx=inner_approx)
 	elseif isa(CP.Objective, ExitProbability)
-		model, w = finite_horizon_EP(CP, μ0, d, trange, solver, P)
+		model, w = finite_horizon_EP(CP, μ0, d, trange, solver, P; inner_approx=inner_approx)
 	elseif isa(CP.Objective, TerminalSetProbability)
-		model, w = finite_horizon_TP(CP, μ0, d, trange, solver, P)
+		model, w = finite_horizon_TP(CP, μ0, d, trange, solver, P; inner_approx=inner_approx)
 	else
 		error("Objective function type not supported")
 	end
@@ -52,7 +65,9 @@ function finite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::A
 end
 
 ## Lagrange Mayer
-function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
+function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver,
+						   P::Partition = trivial_partition(CP.MP.X);
+						   inner_approx = SOSCone)
     MP = CP.MP
     t = MP.iv
     nT = length(trange)
@@ -60,6 +75,7 @@ function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
     T = @set(t >= 0 && t <= 1)
 	
     model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
     w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
                     @variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
@@ -100,7 +116,9 @@ function finite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 end
 
 ## Exit probability
-function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
+function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, 
+						   P::Partition = trivial_partition(CP.MP.X);
+						   inner_approx = SOSCone)
 	nT = length(trange)
 	MP = CP.MP
 	t = MP.iv
@@ -108,6 +126,7 @@ function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 	T = @set(t >= 0 && t <= 1)
 
 	model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
                     @variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
@@ -145,7 +164,8 @@ function finite_horizon_EP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 end
 
 # terminal probability
-function finite_horizon_TP(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver)
+function finite_horizon_TP(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver;
+						   inner_approx = inner_approx)
 	nT = length(trange)
 	MP = CP.MP
 	t = MP.iv
@@ -153,6 +173,7 @@ function finite_horizon_TP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 	T = @set(t >= 0 && t <= 1)
 
 	model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
                     @variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
@@ -195,7 +216,9 @@ function finite_horizon_TP(CP::ControlProcess, μ0::Dict, d::Int, trange::Abstra
 end
 
 ## Discounted inf horizon control problems
-function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver, P::Partition = trivial_partition(CP.MP.X))
+function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector{<:Real}, solver,
+	 							  P::Partition = trivial_partition(CP.MP.X);
+								  inner_approx = inner_approx)
 	@assert isa(CP.Objective, LagrangeMayer) "Objective function type not supported"
 	@assert CP.Objective.m == 0 "Mayer term must be 0 for infinite horizon problem"
 	@assert isempty(CP.PathChanceConstraints) "Chance path constraints are not supported in infinite horizon problems"
@@ -203,11 +226,13 @@ function infinite_horizon_control(CP::ControlProcess, μ0::Dict, d::Int, trange:
 	if trange[1] == 0
 		trange = trange[2:end]
 	end
-	model, w, w∞ = infinite_horizon_LM(CP, μ0, d, trange, solver, P)
+	model, w, w∞ = infinite_horizon_LM(CP, μ0, d, trange, solver, P, inner_approx=inner_approx)
 	return model, w, w∞
 end
 
-function infinite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector, solver, P::Partition = trivial_partition(CP.MP.X))
+function infinite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::AbstractVector, solver, 
+							 P::Partition = trivial_partition(CP.MP.X);
+							 inner_approx = inner_approx)
     MP = CP.MP
     t = MP.iv
     nT = length(trange)
@@ -216,6 +241,7 @@ function infinite_horizon_LM(CP::ControlProcess, μ0::Dict, d::Int, trange::Abst
 	T = @set(t >= 0 && t <= 1)
 
     model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
 	w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
                     @variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
                     @variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
