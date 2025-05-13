@@ -53,6 +53,8 @@ polynomialize_expr(p::Number, vars::Dict) = polynomial(p)
 # polynomialize_expr(ex::Number, ::Dict) = ex
 
 polynomialize_expr(exs::Array, vars::Dict) = POLY[polynomialize_expr(ex, vars) for ex in exs]
+polynomialize_expr(exs::SmallVec, vars::Dict) = POLY[polynomialize_expr(ex, vars) for ex in exs]
+
 
 function polynomialize_set(S::Vector, vars::Dict)
     ineq = POLY[]
