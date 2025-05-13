@@ -454,3 +454,127 @@ function max_entropy_measure(MP::MarkovProcess, μ0::Dict, d::Int, trange::Abstr
     end
 	return Bound(objective_value(model), model, P, dual_poly(w, t, trange)), dist
 end
+
+function exit_pop(MP::MarkovProcess, μ0::Dict, p::APL, ∂P, d::Int,
+					trange::AbstractVector{<:Real}, solver,
+					P::Partition = trivial_partition(MP.X);
+					inner_approx = SOSCone)
+	return exit_pop(MP, μ0, p, p, ∂P, d,
+					trange, solver, P;
+					inner_approx = inner_approx)
+end
+function exit_pop(MP::MarkovProcess, μ0::Dict, p::APL, q::APL, ∂P, d::Int,
+                  trange::AbstractVector{<:Real}, solver,
+				  P::Partition = trivial_partition(MP.X);
+				  inner_approx = SOSCone)
+    if trange[1] == 0
+        trange = trange[2:end]
+    end
+    t = MP.iv
+    nT = length(trange)
+    Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
+    T  = @set(t >= 0 && t <= 1)
+	if length(trange) > 1
+		ps = vcat(subs(p, MP.iv => Δt[1]*MP.iv), [subs(p, MP.iv => Δt[i]*MP.iv + trange[i-1]) for i in 2:nT])
+	else
+		ps = [subs(p, MP.iv => Δt[1]*MP.iv)]
+	end
+    model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
+    w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
+		@variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
+		@variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+
+    for v in vertices(P.graph)
+        add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], T, Δt, w, 0)
+    end
+	for e in edges(P.graph)
+        add_coupling_constraints!(model, MP, e, P, T, Δt, w)
+    end
+
+	# spatial exists
+    for v in keys(∂P)
+		if !isempty(∂P[v])
+        	add_exit_constraints!(model, nT, v, props(P.graph, v)[:cell], ∂P[v], T, w, ps)
+		end
+    end
+	
+
+	# temporal exits
+	for v in vertices(P.graph)
+		add_transversality_constraints!(model, MP, props(P.graph, v)[:cell], w[nT,v], subs(q, MP.iv => trange[end]), v)
+	end
+
+	@objective(model, Max, expectation(μ0[first(keys(μ0))] isa Dict ? [subs(w[1, v], t => 0) for v in vertices(P.graph)] : subs(w[1, 1], t => 0), μ0))
+
+	optimize!(model)
+    return Bound(objective_value(model), model, P, dual_poly(w, t, trange))
+end
+
+function exit_pop_unbounded(MP::MarkovProcess, μ0::Dict, p::APL, ∂P, d::Int,
+                  trange::AbstractVector{<:Real}, solver,
+				  P::Partition = trivial_partition(MP.X);
+				  inner_approx = SOSCone)
+    if trange[1] == 0
+        trange = trange[2:end]
+    end
+    t = MP.iv
+    nT = length(trange)
+    Δt = vcat(trange[1], [trange[i] - trange[i-1] for i in 2:nT])
+    T  = @set(t >= 0 && t <= 1)
+	T_final = @set(t >= 0)
+	if length(trange) > 1
+		ps = vcat(subs(p, MP.iv => Δt[1]*MP.iv), [subs(p, MP.iv => Δt[i]*MP.iv + trange[i-1]) for i in 2:nT])
+	else
+		ps = [subs(p, MP.iv => Δt[1]*MP.iv)]
+	end
+    model = SOSModel(solver)
+	PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
+    w = Dict((k, v) => (props(P.graph, v)[:cell] isa Singleton ?
+		@variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
+		@variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph), k in 1:nT)
+	w_final = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
+					@variable(model, [1:1], Poly(monomials(t, 0:d)))[1] :
+					@variable(model, [1:1], Poly(monomials(sort(vcat(MP.x, t), rev = true), 0:d)))[1]) for v in vertices(P.graph))
+    for v in vertices(P.graph)
+        add_dynamics_constraints!(model, MP, v, P, props(P.graph, v)[:cell], T, Δt, w, 0)
+
+		# last element 
+		XT = intersect(props(P.graph, v)[:cell],T_final)
+		t = MP.iv
+		@constraint(model, [1:1], extended_inf_generator(MP, w_final[v]) >= 0.0, domain = XT)
+		@constraint(model, [1:1], subs(w_final[v], t => 0) - subs(w[length(Δt), v], t => 1) >= 0, domain = props(P.graph, v)[:cell])
+    end
+	for e in edges(P.graph)
+        add_coupling_constraints!(model, MP, e, P, T, Δt, w)
+
+		# last element
+		if props(P.graph, e.dst)[:cell] isa Singleton
+			@constraint(model, [1:1], w_final[e.dst] - subs(w_final[e.src], MP.x => props(P.graph, e.dst)[:cell].x) == 0, domain = T_final)
+		else
+			Xs = props(P.graph, e)[:interface]
+			for X in Xs
+				XT = intersect(X,T_final)
+				@constraint(model, [1:1], w_final[e.dst] - w_final[e.src] == 0, domain = XT)
+			end
+		end
+    end
+
+	# spatial exists
+    for v in keys(∂P)
+		if !isempty(∂P[v])
+        	add_exit_constraints!(model, nT, v, props(P.graph, v)[:cell], ∂P[v], T, w, ps)
+
+			# last element
+			X = props(P.graph, v)[:cell]
+			∂X = ∂P[v]
+			ps_final = subs(p, MP.iv => trange[end] + MP.iv)
+			@constraint(model, [k in 1:length(∂X)], w_final[k] <= ps_final, domain = intersect(∂X[k], X, T_final))
+		end
+    end
+	@objective(model, Max, expectation(μ0[first(keys(μ0))] isa Dict ? [subs(w[1, v], t => 0) for v in vertices(P.graph)] : subs(w[1, 1], t => 0), μ0))
+
+	optimize!(model)
+    return Bound(objective_value(model), model, P, dual_poly(w, t, trange))
+end
+

@@ -160,3 +160,8 @@ end
 function add_terminal_chance_constraint!(model::Model, MP::MarkovProcess, TC::ChanceConstraint, v::Int, P::Partition, space_domain::AbstractSemialgebraicSet, w, rhs)
 	@constraint(model, subs(w[nT, v], MP.iv => 1) <= rhs, domain = intersect(TC.X,space_domain))
 end
+
+function add_exit_constraints!(model::Model, nT::Int, v::Int, X::AbstractBasicSemialgebraicSet, 
+                              ∂X::AbstractVector, T, w, rhs)
+    @constraint(model, [i in 1:nT, k in 1:length(∂X)], w[i, v] <= rhs[i], domain = intersect(∂X[k], X, T))
+end

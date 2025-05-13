@@ -351,6 +351,9 @@ function inf_generator(MP::JumpProcess, w::Dict, v::Int, p::Partition)
             end
         end
     end
+    if gen isa APL
+        gen = maximum(degree.(gen.x)) > 0 ? gen : gen.a[1] #not type stable but idk how else to do it
+    end 
     return gen
 end
 

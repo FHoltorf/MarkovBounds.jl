@@ -401,9 +401,9 @@ function approximate_stationary_measure(MP::MarkovProcess, v::APL, order::Int, s
         if props(P.graph, v)[:cell] isa Singleton
             push!(dist, dual(cons[v]))
         elseif props(P.graph, v)[:cell] isa Vector{BasicSemialgebraicSet}
-            push!(dist, sum(dual.(cons[v])).a[end])
+            push!(dist, sum(dual.(cons[v])).a[1])
         elseif props(P.graph, v)[:cell] isa BasicSemialgebraicSet
-            push!(dist, dual(cons[v]).a[end])
+            push!(dist, dual(cons[v]).a[1])
         end
     end
     return Bound(objective_value(model), model, P, Dict(key => value(w[key]) for key in keys(w))), dist
@@ -416,7 +416,9 @@ end
 returns approximate values for the stationary measure which maximizes the entropy on the partition `P`.  
 """
 function max_entropy_measure(MP::MarkovProcess, order::Int, solver, P::Partition,
-                             side_infos = FullSpace(); inner_approx = SOSCone)
+                             side_infos = FullSpace(); inner_approx = SOSCone,
+                             weights=ones(length(vertices(P.graph))),
+                             regularization = zeros(length(vertices(P.graph))))
     model = SOSModel(solver)
     PolyJuMP.setdefault!(model, PolyJuMP.NonNegPoly, inner_approx)
     w = Dict(v => (props(P.graph, v)[:cell] isa Singleton ?
@@ -445,16 +447,16 @@ function max_entropy_measure(MP::MarkovProcess, order::Int, solver, P::Partition
     end
     cons = Dict()
     for v in vertices(P.graph)
-        cons[v] = add_stationarity_constraints!(model, MP, v, P, props(P.graph, v)[:cell], w, s + q[v] - eq_slack - ineq_slack )
+        cons[v] = add_stationarity_constraints!(model, MP, v, P, props(P.graph, v)[:cell], w, s + q[v] - eq_slack - ineq_slack + regularization[v] )
     end
 
     for e in edges(P.graph)
         add_coupling_constraints!(model, MP, e, P, w)
     end
 
-    @constraint(model, [v in vertices(P.graph)], [-1, q[v], u[v]] in MOI.DualExponentialCone())
+    @constraint(model, [v in vertices(P.graph)], [weights[v] == 0 ? 0 : -1, q[v], u[v]] in MOI.DualExponentialCone())
 
-    @objective(model, Max, -sum(u) + s) 
+    @objective(model, Max, -sum(u .* weights) + s) 
     optimize!(model)
     dist = []
     for v in vertices(P.graph)
@@ -462,12 +464,12 @@ function max_entropy_measure(MP::MarkovProcess, order::Int, solver, P::Partition
             if dual(cons[v]) isa Number 
                 push!(dist, dual(cons[v]))
             else
-                push!(dist, dual(cons[v]).a[end])
+                push!(dist, dual(cons[v]).a[1])
             end
         elseif props(P.graph, v)[:cell] isa Vector{BasicSemialgebraicSet}
-            push!(dist, sum(dual.(cons[v])).a[end])
+            push!(dist, sum(dual.(cons[v])).a[1])
         elseif props(P.graph, v)[:cell] isa BasicSemialgebraicSet
-            push!(dist, dual(cons[v]).a[end])
+            push!(dist, dual(cons[v]).a[1])
         end
     end
     return Bound(-objective_value(model), model, P, Dict(key => value(w[key]) for key in keys(w))), dist

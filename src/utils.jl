@@ -13,7 +13,7 @@ function reformat_reactions(rxns::Vector{Reaction}, species_to_index::Dict, x, p
     props = POLY[]
     for r in rxns
         @unpack rate, substrates, substoich, only_use_rate = r
-        rate = rate isa Sym ? params[rate] : rate
+        rate = unwrap(rate) isa Symbolic ? params[rate] : rate
         a = rate*polynomial(MonomialVector(x,0))
         if !only_use_rate
             for (s, ν) in enumerate(substoich)
@@ -67,7 +67,7 @@ function reaction_process_setup(rn::ReactionSystem, x0::Dict;
         end
         scales = stoich_bounds(rn, x0, solver)
     end
-    P = ReactionProcess(rn)
+    P = ReactionProcess(rn, params)
     P_red = project_into_subspace(P, [x0[P.state_to_species[x]] for x in P.JumpProcess.x])
     x_scales = [scales[P_red.state_to_species[x]] for x in P_red.JumpProcess.x]
     P_final = rescale_state(P_red, x_scales)
