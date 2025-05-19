@@ -13,7 +13,7 @@ using ConcreteStructs
 using Catalyst: species, speciesmap, reactions, paramsmap, prodstoichmat, substoichmat, ReactionSystem, Reaction
 
 using Symbolics: Num, expand, Arr, ArrayShapeCtx, unwrap, istree, PolyForm
-using SymbolicUtils: Pow, Mul, Add, Sym, Term, arguments, BasicSymbolic
+using SymbolicUtils: Pow, Mul, Add, Sym, Term, arguments, BasicSymbolic, SmallVec
 using Graphs: edges, vertices, SimpleGraph, add_edge!, add_vertex!, Edge
 using MetaGraphs: MetaGraph, MetaDiGraph, props, set_prop!
 using Base.Iterators: product
